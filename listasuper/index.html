@@ -19,7 +19,7 @@
 }
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);max-width:480px;margin:0 auto;min-height:100vh}
-
+ 
 /* HEADER */
 .hdr{position:sticky;top:0;z-index:100;background:var(--white);border-bottom:1px solid var(--border);padding:14px 18px 10px;box-shadow:var(--shadow)}
 .hdr-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
@@ -30,19 +30,19 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);max-
 .ibtn{width:38px;height:38px;border-radius:12px;border:1.5px solid var(--gb);background:var(--gl);color:var(--green);font-size:17px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s}
 .ibtn:active{transform:scale(.88)}
 .ibtn.on{background:var(--green);color:#fff;border-color:var(--green)}
-
+ 
 /* PROGRESS */
 .prog{display:flex;align-items:center;gap:10px;margin-bottom:10px}
 .prog-track{flex:1;height:7px;background:var(--border);border-radius:4px;overflow:hidden}
 .prog-fill{height:100%;background:linear-gradient(90deg,var(--gm),var(--green));border-radius:4px;transition:width .5s}
 .prog-pct{font-size:12px;color:var(--muted);font-weight:800;min-width:32px;text-align:right}
-
+ 
 /* TABS */
 .tabs{display:flex;gap:5px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
 .tabs::-webkit-scrollbar{display:none}
 .tab{flex-shrink:0;padding:5px 11px;border-radius:20px;font-size:12px;font-weight:700;cursor:pointer;border:1.5px solid transparent;background:#eee9e0;color:var(--muted);white-space:nowrap;font-family:'Nunito',sans-serif;transition:.15s}
 .tab.on{background:var(--gl);border-color:var(--gb);color:var(--green)}
-
+ 
 /* ADD */
 .add{background:var(--white);border-bottom:1px solid var(--border);padding:12px 18px;display:flex;gap:8px}
 .add input{flex:1;background:var(--bg);border:1.5px solid var(--border2);color:var(--text);font-family:'Nunito',sans-serif;font-size:14px;padding:9px 13px;border-radius:12px;outline:none}
@@ -50,10 +50,10 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);max-
 .add select{background:var(--bg);border:1.5px solid var(--border2);color:var(--text2);font-family:'Nunito',sans-serif;font-size:12px;padding:9px 6px;border-radius:12px;outline:none;max-width:108px}
 .add-btn{background:var(--green);color:#fff;border:none;font-weight:900;font-size:22px;width:42px;height:42px;border-radius:12px;cursor:pointer;flex-shrink:0;font-family:'Nunito',sans-serif;transition:.15s}
 .add-btn:active{transform:scale(.85)}
-
+ 
 /* LIST */
 .list{padding:14px 18px 160px}
-
+ 
 /* CATEGORY */
 .cblock{margin-bottom:16px}
 .chdr{display:flex;align-items:center;justify-content:space-between;padding:7px 12px;border-radius:10px;margin-bottom:7px;cursor:pointer;border:1px solid}
@@ -63,7 +63,7 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);max-
 .cblock.col .carr{transform:rotate(-90deg)}
 .cblock.col .citems{display:none}
 .citems{display:flex;flex-direction:column;gap:5px}
-
+ 
 /* ITEM */
 .item{display:flex;align-items:center;gap:11px;background:var(--white);border:1px solid var(--border);border-radius:13px;padding:11px 13px;box-shadow:var(--shadow);transition:all .2s}
 .item.done{opacity:.42;box-shadow:none;border-color:transparent;background:var(--bg)}
@@ -79,7 +79,7 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);max-
 @keyframes blink{0%,100%{opacity:.4}50%{opacity:1}}
 .idel{background:none;border:none;color:var(--border2);cursor:pointer;font-size:14px;padding:3px 5px;border-radius:6px;line-height:1;transition:.15s}
 .item:hover .idel,.item:active .idel{color:#d00}
-
+ 
 /* PANEL */
 .overlay{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:70;opacity:0;pointer-events:none;transition:opacity .3s;backdrop-filter:blur(3px)}
 .overlay.on{opacity:1;pointer-events:all}
@@ -92,7 +92,7 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);max-
 .ptabs{display:flex;background:var(--bg);border-radius:12px;padding:4px;gap:4px;margin-bottom:16px}
 .ptab{flex:1;padding:8px;border-radius:9px;border:none;font-family:'Nunito',sans-serif;font-size:13px;font-weight:700;cursor:pointer;background:transparent;color:var(--muted);transition:.15s}
 .ptab.on{background:var(--white);color:var(--green);box-shadow:var(--shadow)}
-
+ 
 /* SCAN */
 .scan-btn{width:100%;background:var(--green);color:#fff;border:none;font-family:'Nunito',sans-serif;font-weight:900;font-size:15px;padding:14px;border-radius:13px;cursor:pointer;transition:.15s;margin-top:4px}
 .scan-btn:disabled{background:var(--border2);color:var(--muted);cursor:not-allowed}
@@ -103,32 +103,32 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);max-
 .sp-bar-track{height:6px;background:var(--border);border-radius:3px;overflow:hidden;margin-top:6px}
 .sp-bar-fill{height:100%;background:linear-gradient(90deg,var(--gm),var(--green));border-radius:3px;transition:width .3s}
 .sp-label{font-size:12px;color:var(--green);font-weight:700}
-
+ 
 /* TOTAL */
 .total{background:linear-gradient(135deg,var(--gl),#d0edd8);border:1.5px solid var(--gb);border-radius:14px;padding:14px 16px;margin-bottom:14px;display:none;justify-content:space-between;align-items:center}
 .total.on{display:flex}
 .total-lbl{font-size:12px;color:var(--green);font-weight:700}
 .total-sub{font-size:11px;color:var(--gm);margin-top:2px}
 .total-amt{font-weight:900;font-size:26px;color:var(--green)}
-
+ 
 /* RESULTS */
 .rrow{display:flex;align-items:center;gap:8px;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:9px 12px;margin-bottom:4px}
 .rname{flex:1;font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text2)}
-
+ 
 /* BOTTOM */
 .bot{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;background:var(--white);border-top:1px solid var(--border);padding:11px 18px 28px;display:flex;gap:10px;box-shadow:0 -2px 12px rgba(0,0,0,.07);z-index:50}
 .bbtn{flex:1;padding:12px 8px;border-radius:12px;font-family:'Nunito',sans-serif;font-size:13px;font-weight:700;cursor:pointer;border:1.5px solid var(--border2);background:var(--bg);color:var(--text2);transition:.15s}
 .bbtn.p{background:var(--green);border-color:var(--green);color:#fff}
 .bbtn:active{transform:scale(.96)}
-
+ 
 /* EMPTY */
 .empty{text-align:center;padding:50px 20px;color:var(--muted)}
 .empty-ico{font-size:44px;margin-bottom:12px}
-
+ 
 /* TOAST */
 .toast{position:fixed;top:20px;left:50%;transform:translateX(-50%) translateY(-70px);background:var(--text);color:#fff;font-size:13px;font-weight:700;padding:10px 18px;border-radius:100px;z-index:999;transition:transform .3s cubic-bezier(.32,.72,0,1);white-space:nowrap;pointer-events:none;box-shadow:var(--shadow-lg)}
 .toast.on{transform:translateX(-50%) translateY(0)}
-
+ 
 /* CAT COLORS */
 .cc-CONGELADOS{background:#e8f4fd;border-color:#bbdefb;color:#1565c0}.cc-CONGELADOS .cbadge{color:#1565c0;border:1px solid #bbdefb}
 .cc-ALACENA{background:#fff8e1;border-color:#ffe082;color:#e65100}.cc-ALACENA .cbadge{color:#e65100;border:1px solid #ffe082}
@@ -145,7 +145,7 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);max-
 </style>
 </head>
 <body>
-
+ 
 <div class="hdr">
   <div class="hdr-top">
     <div>
@@ -163,7 +163,7 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);max-
   </div>
   <div class="tabs" id="tabs"></div>
 </div>
-
+ 
 <div class="add">
   <input id="inp" type="text" placeholder="Agregar producto..." autocorrect="on" autocapitalize="sentences">
   <select id="catsel">
@@ -182,9 +182,9 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);max-
   </select>
   <button class="add-btn" onclick="addItem()">+</button>
 </div>
-
+ 
 <div class="list" id="list"></div>
-
+ 
 <div class="overlay" id="ov" onclick="closePanel()"></div>
 <div class="panel" id="panel">
   <div class="drag"></div>
@@ -196,7 +196,7 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);max-
     <button class="ptab on" id="pt-cfg" onclick="setPTab('cfg')">⚙️ Configurar</button>
     <button class="ptab" id="pt-res" onclick="setPTab('res')">📊 Resultados</button>
   </div>
-
+ 
   <div id="pv-cfg">
     <!-- scan progress -->
     <div class="scan-progress" id="scanProg">
@@ -214,7 +214,7 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);max-
     <button class="scan-btn" id="scanBtn" onclick="scanAll()">🔍 Escanear toda la lista</button>
     <div class="scan-note">Consulta precios reales actualizados diariamente<br>en supermercados de toda Argentina.</div>
   </div>
-
+ 
   <div id="pv-res" style="display:none">
     <div class="total" id="totalBox">
       <div>
@@ -231,18 +231,17 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);max-
     </div>
   </div>
 </div>
-
+ 
 <div class="bot" id="bot">
   <button class="bbtn" onclick="clearChecked()">🗑 Borrar tachados</button>
   <button class="bbtn p" onclick="openPanel()">💰 Ver precios</button>
 </div>
-
+ 
 <div class="toast" id="toast"></div>
-
-<script>
-const CATS = {CONGELADOS:'🧊',ALACENA:'🥫','LÁCTEOS':'🥛','PANADERÍA':'🍞','CARNICERÍA':'🥩','VERDULERÍA':'🥕',HIGIENE:'🧴',LIMPIEZA:'🧽','PAPELERÍA':'📦','DIETÉTICA':'🥜',BAZAR:'🍳',OTROS:'🏷️'};
+ 
+<script type="module">,ALACENA:'🥫','LÁCTEOS':'🥛','PANADERÍA':'🍞','CARNICERÍA':'🥩','VERDULERÍA':'🥕',HIGIENE:'🧴',LIMPIEZA:'🧽','PAPELERÍA':'📦','DIETÉTICA':'🥜',BAZAR:'🍳',OTROS:'🏷️'};
 const CAT_ORDER = Object.keys(CATS);
-
+ 
 const INITIAL=[
   {n:'Arándanos freezados',c:'CONGELADOS'},{n:'Moras freezadas',c:'CONGELADOS'},{n:'Primavera freezada',c:'CONGELADOS'},{n:'Helado palitos',c:'CONGELADOS'},{n:'Espinaca congelada',c:'CONGELADOS'},{n:'Cebolla congelada cortada',c:'CONGELADOS'},{n:'Mango congelado',c:'CONGELADOS'},{n:'Acelga congelada',c:'CONGELADOS'},{n:'Brócoli congelado',c:'CONGELADOS'},
   {n:'Café Arlistán suave y espumoso',c:'ALACENA'},{n:'Cacao',c:'ALACENA'},{n:'Fécula de maíz / Maicena',c:'ALACENA'},{n:'Gelatina sin sabor',c:'ALACENA'},{n:'Harina 0000',c:'ALACENA'},{n:'Harina leudante',c:'ALACENA'},{n:'Harina de avena',c:'ALACENA'},{n:'Mezcla para pizza',c:'ALACENA'},{n:'Mermelada durazno o tomate',c:'ALACENA'},{n:'Miel',c:'ALACENA'},{n:'Orégano',c:'ALACENA'},{n:'Provenzal',c:'ALACENA'},{n:'Stevia',c:'ALACENA'},{n:'Té verde',c:'ALACENA'},{n:'Té flor de Jamaica',c:'ALACENA'},{n:'Yerba Mañanita',c:'ALACENA'},{n:'Galletas de arroz',c:'ALACENA'},{n:'Pionono',c:'ALACENA'},{n:'Edulcorante sobrecito',c:'ALACENA'},{n:'Lata de choclo',c:'ALACENA'},{n:'Bicarbonato',c:'ALACENA'},{n:'Azúcar',c:'ALACENA'},{n:'Esencia de vainilla',c:'ALACENA'},{n:'Polvo de hornear',c:'ALACENA'},{n:'Caldo carne o gallina',c:'ALACENA'},{n:'Coca-Cola o gaseosa',c:'ALACENA'},{n:'Exquisita vainilla',c:'ALACENA'},{n:'Mayonesa',c:'ALACENA'},{n:'Lata de atún',c:'ALACENA'},{n:'Galletitas surtidas',c:'ALACENA'},{n:'Salsa de tomate',c:'ALACENA'},{n:'Fideos',c:'ALACENA'},{n:'Gelatina',c:'ALACENA'},{n:'Pan rallado',c:'ALACENA'},{n:'Arroz',c:'ALACENA'},{n:'Aceite',c:'ALACENA'},
@@ -257,18 +256,18 @@ const INITIAL=[
   {n:'Budinera',c:'BAZAR'},{n:'Compotera cuenco',c:'BAZAR',ch:1},{n:'Formitas galletitas',c:'BAZAR'},{n:'Manga pastelera',c:'BAZAR'},{n:'Olla grande',c:'BAZAR',ch:1},{n:'Wok',c:'BAZAR'},{n:'Sartén mediana',c:'BAZAR',ch:1},{n:'Tupper',c:'BAZAR',ch:1},
   {n:'Clarificador pileta',c:'OTROS'},{n:'Cloro pileta',c:'OTROS',ch:1},{n:'Alguicida',c:'OTROS',ch:1},
 ];
-
+ 
 // ── STATE ──
 let items={}, prices={}, col=new Set(), tab='TODOS', pOpen=false, ptab='cfg';
-
+ 
 function load() {
   try { const s=localStorage.getItem('ls4'); if(s) items=JSON.parse(s); else init(); } catch(e){init();}
   try { const p=localStorage.getItem('lsp4'); if(p) prices=JSON.parse(p); } catch(e){}
 }
 function init() { INITIAL.forEach((d,i)=>{ items[`i${i}`]={name:d.n,cat:d.c,checked:!!d.ch,ts:i}; }); }
-function save(){ try{localStorage.setItem('ls4',JSON.stringify(items));}catch(e){} }
-function saveP(){ try{localStorage.setItem('lsp4',JSON.stringify(prices));}catch(e){} }
-
+let save = function(){ try{localStorage.setItem('ls4',JSON.stringify(items));}catch(e){} };
+let saveP = function(){ try{localStorage.setItem('lsp4',JSON.stringify(prices));}catch(e){} };
+ 
 // ── RENDER ──
 function render(){
   const ids=Object.keys(items);
@@ -279,7 +278,7 @@ function render(){
   document.getElementById('sub').textContent=`${done} de ${total} comprados`;
   renderTabs(ids); renderList(ids); renderResults();
 }
-
+ 
 function renderTabs(ids){
   const cats=new Set(ids.map(id=>items[id].cat||'OTROS'));
   const all=['TODOS',...CAT_ORDER.filter(c=>cats.has(c))];
@@ -287,7 +286,7 @@ function renderTabs(ids){
     `<button class="tab${t===tab?' on':''}" onclick="setTab('${t}')">${t==='TODOS'?'🛒 Todo':(CATS[t]||'📦')+' '+t}</button>`
   ).join('');
 }
-
+ 
 function renderList(ids){
   const filt=ids.filter(id=>tab==='TODOS'||items[id].cat===tab);
   const bycat={};
@@ -308,7 +307,7 @@ function renderList(ids){
     </div>`;
   }).join('');
 }
-
+ 
 function renderItem(id){
   const it=items[id], p=prices[id]||{};
   let pt='';
@@ -323,7 +322,7 @@ function renderItem(id){
     <button class="idel" onclick="delItem('${id}')">✕</button>
   </div>`;
 }
-
+ 
 function renderResults(){
   const withP=Object.entries(prices).filter(([id,p])=>items[id]&&p.precio&&!p.loading);
   const empty=document.getElementById('resEmpty'), list=document.getElementById('resList'), box=document.getElementById('totalBox');
@@ -339,7 +338,7 @@ function renderResults(){
       <span class="ptag c1">🏛️ $${p.precio.toLocaleString('es-AR')}</span>
     </div>`).join('');
 }
-
+ 
 // ── ACTIONS ──
 window.addItem=()=>{
   const inp=document.getElementById('inp'), name=inp.value.trim();
@@ -358,12 +357,12 @@ window.clearChecked=()=>{
 };
 window.setTab=t=>{tab=t;render();};
 window.togCat=cat=>{col.has(cat)?col.delete(cat):col.add(cat);render();};
-
+ 
 // ── PANEL ──
 window.openPanel=()=>{pOpen=true;document.getElementById('panel').classList.add('on');document.getElementById('ov').classList.add('on');document.getElementById('bot').style.display='none';document.getElementById('pbtn').classList.add('on');};
 window.closePanel=()=>{pOpen=false;document.getElementById('panel').classList.remove('on');document.getElementById('ov').classList.remove('on');document.getElementById('bot').style.display='flex';document.getElementById('pbtn').classList.remove('on');};
 window.setPTab=t=>{ptab=t;['cfg','res'].forEach(x=>{document.getElementById('pt-'+x).classList.toggle('on',x===t);document.getElementById('pv-'+x).style.display=x===t?'':'none';});};
-
+ 
 // ── SCAN ──
 window.scanAll=async()=>{
   const btn=document.getElementById('scanBtn');
@@ -371,10 +370,10 @@ window.scanAll=async()=>{
   btn.disabled=true;
   const prog=document.getElementById('scanProg');
   prog.classList.add('on');
-
+ 
   const ids=Object.keys(items);
   let done=0;
-
+ 
   for(const id of ids){
     const name=items[id]?.name;
     if(!name)continue;
@@ -382,7 +381,7 @@ window.scanAll=async()=>{
     const pct=Math.round(done/ids.length*100);
     document.getElementById('scanLabel').textContent=`${done}/${ids.length} · ${name.slice(0,25)}...`;
     document.getElementById('scanBar').style.width=pct+'%';
-
+ 
     try{
       // Llamar a NUESTRA función serverless en Vercel (sin CORS)
       const q=name.split(' ').slice(0,3).join(' ');
@@ -393,7 +392,7 @@ window.scanAll=async()=>{
         else prices[id]={};
       } else prices[id]={};
     }catch(e){ prices[id]={}; }
-
+ 
     saveP();
     // Actualizar item en el DOM sin re-render completo
     const el=document.getElementById('it_'+id);
@@ -401,7 +400,7 @@ window.scanAll=async()=>{
     renderResults();
     await new Promise(r=>setTimeout(r,350));
   }
-
+ 
   prog.classList.remove('on');
   btn.disabled=false;
   btn.textContent='🔄 Re-escanear lista';
@@ -409,7 +408,7 @@ window.scanAll=async()=>{
   save();saveP();render();
   toast('✅ Precios actualizados');
 };
-
+ 
 // ── UTILS ──
 window.doShare=()=>{
   if(navigator.share) navigator.share({title:'Lista del super',url:location.href});
@@ -422,7 +421,62 @@ function toast(msg){
 }
 function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 document.getElementById('inp').addEventListener('keydown',e=>{if(e.key==='Enter')window.addItem();});
-
+ 
+// ── FIREBASE SYNC ──
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, onValue, set, update, remove, push } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+ 
+const firebaseConfig = {
+  apiKey: "AIzaSyC7crxIrqn45Bv4JeMnFDpP4jr06RKhBsY",
+  authDomain: "listasuper-fecaf.firebaseapp.com",
+  databaseURL: "https://listasuper-fecaf-default-rtdb.firebaseio.com",
+  projectId: "listasuper-fecaf",
+  storageBucket: "listasuper-fecaf.firebasestorage.app",
+  messagingSenderId: "400583464780",
+  appId: "1:400583464780:web:11e59a2f051407c74be1e9"
+};
+ 
+const fbApp = initializeApp(firebaseConfig);
+const db = getDatabase(fbApp);
+const itemsRef = ref(db, 'items');
+const pricesRef2 = ref(db, 'prices');
+ 
+let syncing = false;
+ 
+// Escuchar cambios en tiempo real
+onValue(itemsRef, snap => {
+  const data = snap.val();
+  if (data) {
+    items = data;
+    render();
+  }
+});
+ 
+onValue(pricesRef2, snap => {
+  const data = snap.val();
+  if (data) {
+    prices = data;
+    render();
+  }
+});
+ 
+// Sobreescribir save/saveP para usar Firebase
+save = function() {
+  set(itemsRef, items).catch(e => console.warn('Firebase save error:', e));
+};
+ 
+saveP = function() {
+  set(pricesRef2, prices).catch(e => console.warn('Firebase saveP error:', e));
+};
+ 
+// Cargar datos iniciales de Firebase (si hay) o subir los locales
+onValue(itemsRef, snap => {
+  if (!snap.exists()) {
+    // Primera vez: subir la lista inicial
+    set(itemsRef, items);
+  }
+}, { onlyOnce: true });
+ 
 load(); render();
 </script>
 </body>

@@ -200,9 +200,14 @@ let fbItems, fbPrices, fbConnected = false;
 function loadLocal() {
   try {
     const s = localStorage.getItem('ls5');
-    if (s) { items = JSON.parse(s); return; }
+    if (s) {
+      const parsed = JSON.parse(s);
+      const valid = Object.values(parsed).filter(v => v && v.name);
+      if (valid.length > 0) { items = parsed; return; }
+    }
   } catch(e) {}
-  // Primera vez: cargar lista inicial
+  // Sin datos válidos — limpiar y cargar lista inicial
+  localStorage.removeItem('ls5');
   INITIAL.forEach((d,i) => { items['i'+i] = {name:d.n, cat:d.c, checked:!!d.ch, ts:i}; });
 }
 
@@ -213,16 +218,21 @@ render(); // Mostrar lista inmediatamente
 try {
   const fbApp = initializeApp(FB);
   const db = getDatabase(fbApp);
-  fbItems = ref(db, 'items');
-  fbPrices = ref(db, 'prices');
+  fbItems = ref(db, 'lista2/items');
+  fbPrices = ref(db, 'lista2/prices');
 
   onValue(fbItems, snap => {
     const data = snap.val();
-    if (data && Object.keys(data).length > 0) {
-      // Firebase tiene datos — usar esos
-      items = data;
+    // Verificar que haya ítems válidos (con nombre)
+    const validItems = data ? Object.entries(data).filter(([,v]) => v && v.name) : [];
+    if (validItems.length > 0) {
+      // Firebase tiene datos válidos — usar esos
+      items = Object.fromEntries(validItems);
     } else {
-      // Firebase vacío — subir lista local
+      // Firebase vacío o sin datos válidos — subir lista local
+      const localItems = {};
+      INITIAL.forEach((d,i) => { localItems['i'+i] = {name:d.n, cat:d.c, checked:!!d.ch, ts:i}; });
+      items = localItems;
       set(fbItems, items);
     }
     fbConnected = true;

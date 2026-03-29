@@ -34,6 +34,7 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);max-
 .add input:focus{border-color:var(--green)}
 .add select{background:var(--bg);border:1.5px solid var(--border2);color:var(--text2);font-family:'Nunito',sans-serif;font-size:12px;padding:9px 6px;border-radius:12px;outline:none;max-width:108px}
 .add-btn{background:var(--green);color:#fff;border:none;font-weight:900;font-size:22px;width:42px;height:42px;border-radius:12px;cursor:pointer;flex-shrink:0;font-family:'Nunito',sans-serif}
+#camBtn{background:var(--white);border:1.5px solid var(--gb);color:var(--green);font-size:18px}
 .list{padding:14px 18px 160px}
 .cblock{margin-bottom:16px}
 .chdr{display:flex;align-items:center;justify-content:space-between;padding:7px 12px;border-radius:10px;margin-bottom:7px;cursor:pointer;border:1px solid}
@@ -156,7 +157,9 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);max-
     <option value="BAZAR">🍳 Bazar</option>
     <option value="OTROS">🏷️ Otros</option>
   </select>
+  <button class="add-btn" style="background:var(--gm)" onclick="tomarFoto()">📷</button>
   <button class="add-btn" onclick="addItem()">+</button>
+  <input type="file" id="fotoInput" accept="image/*" capture="environment" style="display:none" onchange="procesarFoto(this)">
 </div>
 <div class="list" id="list"></div>
 <div class="overlay" id="ov" onclick="closePanel()"></div>
@@ -259,6 +262,61 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);max-
     <div style="font-weight:800;font-size:14px;margin-bottom:12px;color:var(--text)">📊 Historial de compras</div>
     <div id="historialList"><div style="text-align:center;padding:20px;color:var(--muted);font-size:13px">Aún no hay compras registradas</div></div>
   </div>
+</div>
+
+<!-- MODAL EDITAR NOMBRE -->
+<div class="overlay" id="ovEdit" onclick="closeEdit()"></div>
+<div class="panel" id="panelEdit" style="padding-bottom:40px">
+  <div class="drag"></div>
+  <div class="pttl"><h2>✏️ Editar producto</h2><button class="px" onclick="closeEdit()">✕</button></div>
+  <div style="margin-bottom:12px">
+    <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:6px">Nombre</div>
+    <input id="editNombreInput" type="text" autocorrect="on" autocapitalize="sentences"
+      style="width:100%;background:var(--bg);border:1.5px solid var(--border2);color:var(--text);font-family:'Nunito',sans-serif;font-size:16px;font-weight:700;padding:11px 13px;border-radius:12px;outline:none"
+      onfocus="this.style.borderColor='var(--green)'"
+      onblur="this.style.borderColor='var(--border2)'"
+      onkeydown="if(event.key==='Enter') saveNombre()">
+  </div>
+  <div style="margin-bottom:16px">
+    <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:6px">Categoría</div>
+    <select id="editCatInput" style="width:100%;background:var(--bg);border:1.5px solid var(--border2);color:var(--text2);font-family:'Nunito',sans-serif;font-size:14px;padding:11px 13px;border-radius:12px;outline:none">
+      <option value="CONGELADOS">🧊 Congelados</option>
+      <option value="ALACENA">🥫 Alacena</option>
+      <option value="LÁCTEOS">🥛 Lácteos</option>
+      <option value="PANADERÍA">🍞 Panadería</option>
+      <option value="CARNICERÍA">🥩 Carnicería</option>
+      <option value="VERDULERÍA">🥕 Verdulería</option>
+      <option value="HIGIENE">🧴 Higiene</option>
+      <option value="LIMPIEZA">🧽 Limpieza</option>
+      <option value="PAPELERÍA">📦 Papelería</option>
+      <option value="DIETÉTICA">🥜 Dietética</option>
+      <option value="BAZAR">🍳 Bazar</option>
+      <option value="OTROS">🏷️ Otros</option>
+    </select>
+  </div>
+  <button class="scan-btn" onclick="saveNombre()">💾 Guardar cambios</button>
+</div>
+
+<!-- MODAL FOTO -->
+<div class="overlay" id="ovFoto" onclick="closeFoto()"></div>
+<div class="panel" id="panelFoto" style="padding-bottom:40px">
+  <div class="drag"></div>
+  <div class="pttl"><h2>📷 Agregar con foto</h2><button class="px" onclick="closeFoto()">✕</button></div>
+  <div id="fotoPreview" style="display:none;margin-bottom:14px;text-align:center">
+    <img id="fotoImg" style="max-width:100%;border-radius:12px;max-height:200px;object-fit:cover">
+  </div>
+  <div id="fotoStatus" style="text-align:center;padding:20px;color:var(--muted);font-size:13px">
+    <div style="font-size:40px;margin-bottom:10px">📷</div>
+    <div style="font-weight:700;margin-bottom:6px">Sacá una foto del producto</div>
+    <div style="font-size:12px">Claude AI va a identificar el producto y lo agrega a tu lista</div>
+  </div>
+  <div id="fotoResultados" style="display:none">
+    <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:8px">Productos detectados — tocá para agregar:</div>
+    <div id="fotoItems"></div>
+  </div>
+  <button class="scan-btn" style="margin-top:12px" onclick="document.getElementById('fotoInput').click()">
+    📷 Sacar foto
+  </button>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -439,7 +497,7 @@ function renderItem(id) {
   return '<div class="item'+(it.checked?' done':'')+'" id="it_'+id+'">' +
     '<div class="chk" onclick="togItem(\''+id+'\')">'+(it.checked?'✓':'')+'</div>' +
     '<div class="iinfo">' +
-      '<div class="iname">'+esc(it.name)+'</div>' +
+      '<div class="iname" ondblclick="editNombre(\''+id+'\')" title="Doble click para editar">'+esc(it.name)+'</div>' +
       preciosHtml +
       '<input class="inota" placeholder="Agregar nota..." value="'+esc(nota)+'" ' +
         'onchange="saveNota(\''+id+'\',this.value)" ' +
@@ -536,6 +594,194 @@ window.savePrecioReal = (id, val) => {
       localStorage.setItem('preciosRef', JSON.stringify(refs));
     } catch(e) {}
   }
+};
+
+// ── FOTO DE PRODUCTO ──
+window.tomarFoto = () => {
+  document.getElementById('fotoInput').click();
+};
+
+window.procesarFoto = async (input) => {
+  const file = input.files[0];
+  if (!file) return;
+
+  const btn = document.getElementById('camBtn');
+  btn.textContent = '⏳';
+  btn.disabled = true;
+  toast('Analizando foto...');
+
+  try {
+    // Convertir a base64
+    const base64 = await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result.split(',')[1]);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+
+    // Enviar al endpoint de Vercel
+    const res = await fetch('/api/foto', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ imagen: base64, tipo: file.type }),
+    });
+
+    const data = await res.json();
+
+    if (data.ok && data.nombre) {
+      // Poner el nombre en el campo de texto para que el usuario confirme
+      document.getElementById('inp').value = data.nombre;
+      document.getElementById('inp').focus();
+      toast('✓ ' + data.nombre + ' — confirmá y tocá +');
+    } else {
+      toast('No pude identificar el producto — escribilo manualmente');
+    }
+  } catch(e) {
+    toast('Error al procesar la foto');
+  } finally {
+    btn.textContent = '📷';
+    btn.disabled = false;
+    input.value = ''; // Reset para poder volver a sacar foto
+  }
+};
+
+// ── EDITAR NOMBRE ──
+let editingId = null;
+window.editNombre = id => {
+  editingId = id;
+  const it = items[id];
+  if (!it) return;
+  document.getElementById('editNombreInput').value = it.name;
+  document.getElementById('editCatInput').value = it.cat || 'OTROS';
+  document.getElementById('panelEdit').classList.add('on');
+  document.getElementById('ovEdit').classList.add('on');
+  document.getElementById('bot').style.display = 'none';
+  setTimeout(() => document.getElementById('editNombreInput').focus(), 300);
+};
+window.closeEdit = () => {
+  document.getElementById('panelEdit').classList.remove('on');
+  document.getElementById('ovEdit').classList.remove('on');
+  document.getElementById('bot').style.display = 'flex';
+  editingId = null;
+};
+window.saveNombre = () => {
+  if (!editingId) return;
+  const nombre = document.getElementById('editNombreInput').value.trim();
+  const cat = document.getElementById('editCatInput').value;
+  if (!nombre) { toast('El nombre no puede estar vacío'); return; }
+  items[editingId].name = nombre;
+  items[editingId].cat = cat;
+  saveItems();
+  render();
+  closeEdit();
+  toast('✓ Producto actualizado');
+};
+
+// ── FOTO DE PRODUCTO ──
+window.tomarFoto = () => {
+  document.getElementById('fotoPreview').style.display = 'none';
+  document.getElementById('fotoStatus').style.display = '';
+  document.getElementById('fotoResultados').style.display = 'none';
+  document.getElementById('panelFoto').classList.add('on');
+  document.getElementById('ovFoto').classList.add('on');
+  document.getElementById('bot').style.display = 'none';
+  document.getElementById('fotoInput').click();
+};
+window.closeFoto = () => {
+  document.getElementById('panelFoto').classList.remove('on');
+  document.getElementById('ovFoto').classList.remove('on');
+  document.getElementById('bot').style.display = 'flex';
+  document.getElementById('fotoInput').value = '';
+};
+window.procesarFoto = async (input) => {
+  const file = input.files[0];
+  if (!file) return;
+
+  // Mostrar preview
+  const reader = new FileReader();
+  reader.onload = e => {
+    document.getElementById('fotoImg').src = e.target.result;
+    document.getElementById('fotoPreview').style.display = '';
+  };
+  reader.readAsDataURL(file);
+
+  document.getElementById('fotoStatus').innerHTML =
+    '<div style="font-size:30px;margin-bottom:8px">🔍</div>' +
+    '<div style="font-weight:700">Analizando imagen...</div>' +
+    '<div style="font-size:12px;color:var(--muted);margin-top:4px">Claude AI está identificando los productos</div>';
+
+  try {
+    // Convertir imagen a base64
+    const base64 = await new Promise((res, rej) => {
+      const r = new FileReader();
+      r.onload = () => res(r.result.split(',')[1]);
+      r.onerror = rej;
+      r.readAsDataURL(file);
+    });
+
+    // Llamar a Claude API con la imagen
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 500,
+        messages: [{
+          role: 'user',
+          content: [
+            {
+              type: 'image',
+              source: { type: 'base64', media_type: file.type, data: base64 }
+            },
+            {
+              type: 'text',
+              text: 'Identificá los productos de supermercado en esta imagen. Pueden ser productos en la heladera, alacena, góndola del super, o un ticket de compra. Respondé SOLO con un JSON: {"productos":[{"nombre":"nombre del producto","categoria":"una de: CONGELADOS|ALACENA|LÁCTEOS|PANADERÍA|CARNICERÍA|VERDULERÍA|HIGIENE|LIMPIEZA|PAPELERÍA|DIETÉTICA|BAZAR|OTROS"}]}. Máximo 5 productos. Sin texto extra.'
+            }
+          ]
+        }]
+      })
+    });
+
+    const data = await response.json();
+    const text = (data?.content?.[0]?.text || '').trim();
+    const match = text.match(/\{[\s\S]*\}/);
+    if (!match) throw new Error('Sin respuesta');
+
+    const parsed = JSON.parse(match[0]);
+    const productos = parsed.productos || [];
+
+    if (!productos.length) throw new Error('No se detectaron productos');
+
+    document.getElementById('fotoStatus').style.display = 'none';
+    document.getElementById('fotoResultados').style.display = '';
+    document.getElementById('fotoItems').innerHTML = productos.map((p, i) =>
+      '<div onclick="agregarDeFoto(\''+esc(p.nombre)+'\',\''+p.categoria+'\')" ' +
+        'style="display:flex;align-items:center;justify-content:space-between;background:var(--bg);border:1.5px solid var(--border);border-radius:12px;padding:12px 14px;margin-bottom:8px;cursor:pointer">' +
+        '<div>' +
+          '<div style="font-weight:700;font-size:14px">'+esc(p.nombre)+'</div>' +
+          '<div style="font-size:11px;color:var(--muted);margin-top:2px">'+(CATS[p.categoria]||'📦')+' '+p.categoria+'</div>' +
+        '</div>' +
+        '<span style="background:var(--gl);color:var(--green);border:1px solid var(--gb);font-size:12px;font-weight:700;padding:4px 10px;border-radius:8px">+ Agregar</span>' +
+      '</div>'
+    ).join('');
+
+  } catch(e) {
+    document.getElementById('fotoStatus').innerHTML =
+      '<div style="font-size:30px;margin-bottom:8px">😕</div>' +
+      '<div style="font-weight:700;color:#c0392b">No se pudo identificar</div>' +
+      '<div style="font-size:12px;color:var(--muted);margin-top:4px">Intentá con una foto más clara o agregá el producto manualmente</div>';
+  }
+};
+
+window.agregarDeFoto = (nombre, cat) => {
+  const id = 'i'+Date.now();
+  items[id] = {name:nombre, cat:cat||'OTROS', checked:false, ts:Date.now()};
+  saveItems(); render();
+  toast('✓ '+nombre+' agregado');
+  closeFoto();
 };
 
 window.saveNota = (id, val) => {

@@ -886,26 +886,10 @@ function updateBudgetBar() {
   if (!budget) { section.style.display = 'none'; return; }
   section.style.display = '';
 
-  // Para cada ítem tachado, usar en orden:
-  // 1. Precio real ingresado en esta sesión (💳)
-  // 2. Precio real guardado de compras anteriores (preciosRef)
-  // 3. No sumar si no hay ninguno
-  const preciosRef = window._preciosRefFB || {};
-
-  const gastado = Object.entries(items)
-    .filter(([,it]) => it && it.checked)
-    .reduce((s, [id, it]) => {
-      const p = prices[id];
-      // Precio real de esta sesión
-      if (p?.precioReal) return s + Number(p.precioReal);
-      // Precio real de compra anterior guardado en preciosRef
-      const refEntry = Object.values(preciosRef).find(r =>
-        r?.nombre && it?.name &&
-        r.nombre.toLowerCase().slice(0,8) === it.name.toLowerCase().slice(0,8)
-      );
-      if (refEntry?.precio) return s + refEntry.precio;
-      return s;
-    }, 0);
+  // Solo sumar ítems con precio REAL cargado en esta sesión
+  const gastado = Object.entries(prices)
+    .filter(([id, p]) => p?.precioReal && items[id])
+    .reduce((s, [,p]) => s + Number(p.precioReal), 0);
 
   const pct = Math.min(Math.round(gastado / budget * 100), 100);
   const disponible = Math.max(budget - gastado, 0);
@@ -1024,10 +1008,11 @@ function renderModoCompra() {
 
 // ── CERRAR COMPRA ──
 window.cerrarCompra = () => {
-  // Calcular total estimado solo de ítems comprados (tachados)
-  const withP = Object.entries(prices).filter(([id,p])=>items[id]&&items[id].checked&&(p.precioReal||p.precio));
-  const estimado = withP.reduce((s,[,p])=>s+(p.precioReal||p.precio||0),0);
-  document.getElementById('compraEstimado').textContent = '$'+Math.round(estimado).toLocaleString('es-AR');
+  // Total estimado = suma de precios reales cargados (lo que realmente compraste)
+  const conPrecioReal = Object.entries(prices).filter(([id,p]) => p?.precioReal && items[id]);
+  const estimado = conPrecioReal.reduce((s,[,p]) => s + Number(p.precioReal), 0);
+  const itemsComprados = conPrecioReal.length;
+  document.getElementById('compraEstimado').textContent = '$' + Math.round(estimado).toLocaleString('es-AR');
   document.getElementById('totalRealInput').value = estimado > 0 ? Math.round(estimado) : '';
   document.getElementById('superInput').value = '';
   renderHistorial();

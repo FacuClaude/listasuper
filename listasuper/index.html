@@ -885,14 +885,10 @@ function updateBudgetBar() {
   if (!budget) { section.style.display = 'none'; return; }
   section.style.display = '';
 
-  // Solo sumar ítems tachados en ESTA sesión (no los que ya estaban tachados antes)
-  const antes = window._tachadosAntes || new Set();
-  const gastado = Object.entries(items)
-    .filter(([id, it]) => it && it.checked && !antes.has(id))
-    .reduce((s, [id]) => {
-      const p = prices[id];
-      return s + (p?.precioReal || p?.precio || 0);
-    }, 0);
+  // Solo sumar ítems con precio REAL cargado (💳) — el usuario lo ingresó manualmente
+  const gastado = Object.entries(prices)
+    .filter(([id, p]) => p?.precioReal && items[id] && items[id].checked)
+    .reduce((s, [,p]) => s + Number(p.precioReal), 0);
 
   const pct = Math.min(Math.round(gastado / budget * 100), 100);
   const disponible = Math.max(budget - gastado, 0);

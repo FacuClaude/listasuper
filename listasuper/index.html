@@ -390,6 +390,8 @@ function catClass(cat) {
     .replace(/[óòö]/gi,'o').replace(/[úùü]/gi,'u').replace(/ñ/gi,'n')
     .replace(/[^A-Za-z]/g,'');
 }
+
+function renderResults() {
   const withP = Object.entries(prices).filter(([id,p])=>items[id]&&p.precio);
   const empty = document.getElementById('resEmpty');
   const list = document.getElementById('resList');

@@ -256,7 +256,18 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);max-
 
   <!-- HISTORIAL -->
   <div style="margin-top:24px">
-    <div style="font-weight:800;font-size:14px;margin-bottom:12px;color:var(--text)">📊 Historial de compras</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+      <div style="font-weight:800;font-size:14px;color:var(--text)">📊 Historial de compras</div>
+      <div style="display:flex;gap:6px">
+        <button onclick="setHistView('grafico')" id="hv-grafico" style="font-size:11px;font-weight:700;padding:4px 10px;border-radius:8px;cursor:pointer;border:1.5px solid var(--gb);background:var(--gl);color:var(--green);font-family:'Nunito',sans-serif">📈 Gráfico</button>
+        <button onclick="setHistView('lista')" id="hv-lista" style="font-size:11px;font-weight:700;padding:4px 10px;border-radius:8px;cursor:pointer;border:1.5px solid var(--border2);background:var(--bg);color:var(--muted);font-family:'Nunito',sans-serif">📋 Lista</button>
+      </div>
+    </div>
+    <!-- Stats resumen -->
+    <div id="histStats" style="display:none;background:var(--gl);border:1.5px solid var(--gb);border-radius:13px;padding:12px 14px;margin-bottom:14px"></div>
+    <!-- Gráfico -->
+    <div id="histGrafico" style="margin-bottom:14px"></div>
+    <!-- Lista -->
     <div id="historialList"><div style="text-align:center;padding:20px;color:var(--muted);font-size:13px">Aún no hay compras registradas</div></div>
   </div>
 </div>
@@ -472,7 +483,7 @@ function renderItem(id) {
   return '<div class="item'+(it.checked?' done':'')+'" id="it_'+id+'">' +
     '<div class="chk" onclick="togItem(\''+id+'\')">'+(it.checked?'✓':'')+'</div>' +
     '<div class="iinfo">' +
-      '<div class="iname" ondblclick="editNombre(\''+id+'\')" title="Doble click para editar">'+esc(it.name)+'</div>' +
+      '<div class="iname">'+esc(it.name)+'</div>' +
       preciosHtml +
       '<input class="inota" placeholder="Agregar nota..." value="'+esc(nota)+'" ' +
         'onchange="saveNota(\''+id+'\',this.value)" ' +
@@ -480,7 +491,10 @@ function renderItem(id) {
         'onfocus="this.style.borderColor=\'var(--green)\'" ' +
         'onblur="this.style.borderColor=\'transparent\'">' +
     '</div>' +
-    '<button class="idel" onclick="delItem(\''+id+'\')">✕</button></div>';
+    '<div style="display:flex;flex-direction:column;gap:4px">' +
+      '<button class="idel" onclick="editNombre(\''+id+'\')" style="color:var(--border2);font-size:12px">✏️</button>' +
+      '<button class="idel" onclick="delItem(\''+id+'\')">✕</button>' +
+    '</div></div>';
 }
 
 function catClass(cat) {
@@ -865,30 +879,101 @@ window.guardarCompra = () => {
   setTimeout(closeCompra, 1500);
 };
 
+let histView = 'grafico';
+
+window.setHistView = (v) => {
+  histView = v;
+  ['grafico','lista'].forEach(x => {
+    const btn = document.getElementById('hv-'+x);
+    if (btn) {
+      btn.style.background = x===v ? 'var(--gl)' : 'var(--bg)';
+      btn.style.borderColor = x===v ? 'var(--gb)' : 'var(--border2)';
+      btn.style.color = x===v ? 'var(--green)' : 'var(--muted)';
+    }
+  });
+  renderHistorial();
+};
+
 function renderHistorial() {
-  // Cargar de localStorage primero
   let historial = {};
   try { historial = JSON.parse(localStorage.getItem('historial')||'{}'); } catch(e) {}
+  const entries = Object.values(historial).sort((a,b)=>new Date(a.fecha)-new Date(b.fecha));
   const list = document.getElementById('historialList');
-  const entries = Object.values(historial).sort((a,b)=>new Date(b.fecha)-new Date(a.fecha));
+  const grafico = document.getElementById('histGrafico');
+  const stats = document.getElementById('histStats');
+
   if (!entries.length) {
     list.innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted);font-size:13px">Aún no hay compras registradas</div>';
+    grafico.innerHTML = '';
+    stats.style.display = 'none';
     return;
   }
-  list.innerHTML = entries.map(c => {
-    const fecha = new Date(c.fecha).toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'});
-    const diff = c.estimado ? Math.round((c.total-c.estimado)/c.estimado*100) : null;
-    const diffStr = diff !== null ? (diff>0?'<span style="color:#e65100">+'+diff+'%</span>':'<span style="color:var(--green)">'+diff+'%</span>') : '';
-    return '<div style="background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:12px 14px;margin-bottom:8px">' +
-      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">' +
-      '<div style="font-weight:800;font-size:15px;color:var(--green)">$'+c.total.toLocaleString('es-AR')+'</div>' +
-      '<div style="font-size:11px;color:var(--muted)">'+fecha+'</div></div>' +
-      '<div style="display:flex;justify-content:space-between;align-items:center">' +
-      '<div style="font-size:12px;color:var(--muted)">'+c.super+' · '+c.items+' ítems</div>' +
-      '<div style="font-size:11px">'+diffStr+'</div></div>' +
-      (c.estimado?'<div style="font-size:11px;color:var(--muted);margin-top:2px">Estimado: $'+c.estimado.toLocaleString('es-AR')+'</div>':'') +
-      '</div>';
-  }).join('');
+
+  // ── STATS RESUMEN ──
+  const totales = entries.map(e => e.total);
+  const promedio = Math.round(totales.reduce((a,b)=>a+b,0)/totales.length);
+  const max = Math.max(...totales);
+  const min = Math.min(...totales);
+  const ultima = entries[entries.length-1];
+  const anterior = entries.length > 1 ? entries[entries.length-2] : null;
+  const diff = anterior ? Math.round((ultima.total - anterior.total) / anterior.total * 100) : null;
+
+  stats.style.display = '';
+  stats.innerHTML =
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">' +
+    '<div><div style="font-size:10px;color:var(--green);font-weight:700;text-transform:uppercase;letter-spacing:.05em">Promedio</div>' +
+    '<div style="font-weight:900;font-size:16px;color:var(--green)">$'+promedio.toLocaleString('es-AR')+'</div></div>' +
+    '<div><div style="font-size:10px;color:var(--green);font-weight:700;text-transform:uppercase;letter-spacing:.05em">Última vs anterior</div>' +
+    '<div style="font-weight:900;font-size:16px;color:'+(diff===null?'var(--muted)':diff>0?'#c0392b':'var(--green)')+'">'+
+    (diff===null?'—':(diff>0?'+':'')+diff+'%')+'</div></div>' +
+    '<div><div style="font-size:10px;color:var(--green);font-weight:700;text-transform:uppercase;letter-spacing:.05em">Mínimo</div>' +
+    '<div style="font-weight:900;font-size:16px;color:var(--green)">$'+min.toLocaleString('es-AR')+'</div></div>' +
+    '<div><div style="font-size:10px;color:var(--green);font-weight:700;text-transform:uppercase;letter-spacing:.05em">Máximo</div>' +
+    '<div style="font-weight:900;font-size:16px;color:var(--green)">$'+max.toLocaleString('es-AR')+'</div></div>' +
+    '</div>';
+
+  // ── GRÁFICO ──
+  if (histView === 'grafico') {
+    list.style.display = 'none';
+    grafico.style.display = '';
+    const maxVal = max * 1.1;
+    const barW = Math.max(28, Math.min(48, Math.floor(280 / entries.length)));
+    grafico.innerHTML =
+      '<div style="overflow-x:auto;padding-bottom:4px">' +
+      '<div style="display:flex;align-items:flex-end;gap:6px;min-width:'+Math.max(entries.length*(barW+6),280)+'px;height:160px;padding:0 4px">' +
+      entries.map((e,i) => {
+        const pct = Math.round(e.total / maxVal * 100);
+        const fecha = new Date(e.fecha).toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit'});
+        const isLast = i === entries.length-1;
+        const color = isLast ? 'var(--green)' : 'var(--gm)';
+        return '<div style="display:flex;flex-direction:column;align-items:center;gap:4px;flex-shrink:0;width:'+barW+'px">' +
+          '<div style="font-size:9px;font-weight:700;color:var(--green);white-space:nowrap">$'+Math.round(e.total/1000)+'k</div>' +
+          '<div style="width:100%;height:'+pct+'%;background:'+color+';border-radius:6px 6px 0 0;min-height:4px;transition:height .4s"></div>' +
+          '<div style="font-size:9px;color:var(--muted);white-space:nowrap">'+fecha+'</div>' +
+          '</div>';
+      }).join('') +
+      '</div></div>' +
+      '<div style="text-align:center;font-size:11px;color:var(--muted);margin-top:6px">'+entries.length+' compra'+(entries.length>1?'s':'')+' registrada'+(entries.length>1?'s':'')+'</div>';
+  } else {
+    // ── LISTA ──
+    grafico.style.display = 'none';
+    list.style.display = '';
+    list.innerHTML = [...entries].reverse().map(c => {
+      const fecha = new Date(c.fecha).toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'});
+      const diff = c.estimado ? Math.round((c.total-c.estimado)/c.estimado*100) : null;
+      const diffStr = diff !== null ?
+        (diff>0?'<span style="color:#c0392b;font-weight:700">+'+diff+'%</span>':'<span style="color:var(--green);font-weight:700">'+diff+'%</span>') : '';
+      return '<div style="background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:12px 14px;margin-bottom:8px">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">' +
+        '<div style="font-weight:900;font-size:16px;color:var(--green)">$'+c.total.toLocaleString('es-AR')+'</div>' +
+        '<div style="font-size:11px;color:var(--muted)">'+fecha+'</div></div>' +
+        '<div style="display:flex;justify-content:space-between;align-items:center">' +
+        '<div style="font-size:12px;color:var(--muted)">'+c.super+' · '+c.items+' ítems</div>' +
+        diffStr+'</div>' +
+        (c.estimado?'<div style="font-size:11px;color:var(--muted);margin-top:2px">Estimado: $'+c.estimado.toLocaleString('es-AR')+'</div>':'') +
+        '</div>';
+    }).join('');
+  }
 }
 
 // También cargar historial de Firebase

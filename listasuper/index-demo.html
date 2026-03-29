@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -337,7 +338,9 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);max-
 <div class="toast" id="toast"></div>
 
 <script type="module">
-// MODO DEMO — sin Firebase, datos locales solamente
+// MODO DEMO - sin Firebase
+
+
 
 const CATS = {CONGELADOS:'🧊',ALACENA:'🥫','LÁCTEOS':'🥛','PANADERÍA':'🍞','CARNICERÍA':'🥩','VERDULERÍA':'🥕',HIGIENE:'🧴',LIMPIEZA:'🧽','PAPELERÍA':'📦','DIETÉTICA':'🥜',BAZAR:'🍳',OTROS:'🏷️'};
 const CAT_ORDER = Object.keys(CATS);
@@ -359,28 +362,83 @@ const INITIAL = [
 
 // ── STATE ──
 let items = {}, prices = {}, col = new Set(), tab = 'TODOS', ptab = 'cfg';
-let fbItems, fbPrices, fbHistorial, fbConnected = false;
+let fbItems=null, fbPrices=null, fbHistorial=null, fbConnected = false;
 
 // ── PASO 1: Cargar lista local inmediatamente ──
 function loadLocal() {
-  // DEMO: siempre cargar lista inicial limpia
+  // DEMO: siempre lista fresca
+  items = {};
   INITIAL.forEach((d,i) => { items['i'+i] = {name:d.n, cat:d.c, checked:false, ts:i}; });
 }
 
 loadLocal();
 render(); // Mostrar lista inmediatamente
 
-// ── MODO DEMO — sin Firebase ──
+// ── MODO DEMO ──
 document.getElementById('dot').className = 'dot ok';
-document.getElementById('subTxt').textContent = '🧪 Modo demo — los cambios no se guardan';
+document.getElementById('subTxt').textContent = '🧪 Modo demo · los cambios no se guardan';
 fbConnected = true;
+if (false) { // Firebase deshabilitado en demo
+try {
+  const fbApp = initializeApp(FB);
+  const db = getDatabase(fbApp);
+  window._fbApp = fbApp;
+  fbItems = ref(db, 'lista2/items');
+  fbPrices = ref(db, 'lista2/prices');
+  fbHistorial = ref(db, 'lista2/historial');
 
-function saveItems() {
-  // DEMO: no guardamos en Firebase ni localStorage
-}
-function savePrices() {
-  // DEMO: no guardamos en Firebase ni localStorage
-}
+  // Cargar precios de referencia personalizados
+  const preciosRefFbRef = ref(db, 'lista2/preciosRef');
+  onValue(preciosRefFbRef, snap => {
+    window._preciosRefFB = snap.val() || {};
+  });
+
+  onValue(fbItems, snap => {
+    const data = snap.val();
+    // Verificar que haya ítems válidos (con nombre)
+    const validItems = data ? Object.entries(data).filter(([,v]) => v && v.name) : [];
+    if (validItems.length > 0) {
+      // Firebase tiene datos válidos — usar esos
+      items = Object.fromEntries(validItems);
+    } else {
+      // Firebase vacío o sin datos válidos — subir lista local
+      const localItems = {};
+      INITIAL.forEach((d,i) => { localItems['i'+i] = {name:d.n, cat:d.c, checked:!!d.ch, ts:i}; });
+      items = localItems;
+      set(fbItems, items);
+    }
+    fbConnected = true;
+    document.getElementById('dot').className = 'dot ok';
+    document.getElementById('subTxt').textContent = 'Sincronizado en tiempo real ✓';
+    render();
+  });
+
+  onValue(fbPrices, snap => {
+    const data = snap.val();
+    if (data) { prices = data; renderResults(); }
+  });
+
+  // Sincronizar carritos
+  onValue(ref(db, 'lista2/carritos'), snap => {
+    const data = snap.val();
+    if (data) {
+      const arr = Object.values(data).sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
+      try { localStorage.setItem('carritos', JSON.stringify(arr)); } catch(e) {}
+    }
+  });
+
+  // Sincronizar historial
+  onValue(fbHistorial, snap => {
+    const data = snap.val();
+    if (data) { try { localStorage.setItem('historial', JSON.stringify(data)); } catch(e) {} }
+  });
+
+} catch(e) {
+  document.getElementById('subTxt').textContent = 'Sin sincronización';
+}} // fin if false
+
+function saveItems() { /* DEMO: sin guardado */ }
+function savePrices() { /* DEMO: sin guardado */ }
 
 // ── RENDER ──
 function render() {
@@ -1098,7 +1156,7 @@ window.doShare = () => {
   else { navigator.clipboard?.writeText(location.href); toast('Link copiado 📋'); }
 };
 function toast(msg) { const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('on'); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('on'),2400); }
-function esc(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function esc(s) { if (!s || typeof s !== "string") return ""; return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
 document.getElementById('inp').addEventListener('keydown', e=>{ if(e.key==='Enter') window.addItem(); });
 </script>
 </body>

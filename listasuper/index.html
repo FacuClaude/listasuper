@@ -728,7 +728,9 @@ if (window._fbApp) {
       try { localStorage.setItem('carritos', JSON.stringify(arr)); } catch(e) {}
     }
   });
-} = () => {
+}
+
+window.destacharTodos = () => {
   const ch = Object.keys(items).filter(id=>items[id]&&items[id].checked);
   if (!ch.length) { toast('No hay ítems tachados'); return; }
   ch.forEach(id=>{ items[id].checked = false; });

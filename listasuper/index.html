@@ -907,10 +907,12 @@ function updateBudgetBar() {
 }
 
 window.entrarModoCompra = () => {
-  // Guardar snapshot de qué estaba tachado ANTES de entrar al modo compra
-  window._tachadosAntes = new Set(
-    Object.keys(items).filter(id => items[id] && items[id].checked)
-  );
+  // Limpiar precios reales de sesión anterior para empezar la barra desde $0
+  Object.keys(prices).forEach(id => {
+    if (prices[id]?.precioReal) delete prices[id].precioReal;
+  });
+  savePrices();
+
   // Cargar presupuesto guardado
   const saved = localStorage.getItem('mc_budget');
   window._budget = saved ? parseInt(saved) : 0;

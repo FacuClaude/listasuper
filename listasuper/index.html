@@ -184,8 +184,37 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);max-
 <div class="bot" id="bot">
   <button class="bbtn" onclick="destacharTodos()">↩️ Destachar</button>
   <button class="bbtn" onclick="clearChecked()">🗑 Borrar</button>
-  <button class="bbtn" onclick="openPanel()">💰 Precios</button>
+  <button class="bbtn" onclick="openCarritos()">📦 Pendientes</button>
   <button class="bbtn p" onclick="entrarModoCompra()">🛒 Ir al super</button>
+</div>
+
+<!-- MODAL COMPRAS PENDIENTES -->
+<div class="overlay" id="ovCarritos" onclick="closeCarritos()"></div>
+<div class="panel" id="panelCarritos">
+  <div class="drag"></div>
+  <div class="pttl">
+    <h2>📦 Compras pendientes</h2>
+    <button class="px" onclick="closeCarritos()">✕</button>
+  </div>
+  <div style="font-size:13px;color:var(--muted);margin-bottom:16px;line-height:1.6">
+    Guardá la selección actual para retomar la compra después.
+  </div>
+  <!-- Guardar carrito actual -->
+  <div style="background:var(--gl);border:1.5px solid var(--gb);border-radius:13px;padding:12px 14px;margin-bottom:16px">
+    <div style="font-size:12px;font-weight:700;color:var(--green);margin-bottom:8px">Selección actual</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:10px" id="carritoActualInfo">Calculando...</div>
+    <div style="display:flex;gap:8px">
+      <input id="carritoNombre" type="text" placeholder="Nombre (ej: Compra del martes)"
+        style="flex:1;background:var(--white);border:1.5px solid var(--border2);color:var(--text);font-family:'Nunito',sans-serif;font-size:13px;padding:9px 12px;border-radius:10px;outline:none"
+        onfocus="this.style.borderColor='var(--green)'"
+        onblur="this.style.borderColor='var(--border2)'"
+        onkeydown="if(event.key==='Enter') guardarCarrito()">
+      <button onclick="guardarCarrito()" style="background:var(--green);color:#fff;border:none;font-family:'Nunito',sans-serif;font-weight:700;font-size:13px;padding:9px 14px;border-radius:10px;cursor:pointer;white-space:nowrap">💾 Guardar</button>
+    </div>
+  </div>
+  <!-- Lista de carritos guardados -->
+  <div style="font-weight:800;font-size:13px;color:var(--text);margin-bottom:10px">Guardados</div>
+  <div id="carritosList"><div style="text-align:center;padding:20px;color:var(--muted);font-size:13px">No hay compras guardadas</div></div>
 </div>
 
 <!-- MODO COMPRA -->
@@ -400,6 +429,22 @@ try {
     const data = snap.val();
     if (data) { prices = data; renderResults(); }
   });
+
+  // Sincronizar carritos
+  onValue(ref(db, 'lista2/carritos'), snap => {
+    const data = snap.val();
+    if (data) {
+      const arr = Object.values(data).sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
+      try { localStorage.setItem('carritos', JSON.stringify(arr)); } catch(e) {}
+    }
+  });
+
+  // Sincronizar historial
+  onValue(fbHistorial, snap => {
+    const data = snap.val();
+    if (data) { try { localStorage.setItem('historial', JSON.stringify(data)); } catch(e) {} }
+  });
+
 } catch(e) {
   document.getElementById('subTxt').textContent = 'Sin sincronización';
 }
@@ -554,7 +599,136 @@ window.clearChecked = () => {
   saveItems(); savePrices(); render(); toast('Borrados '+ch.length+' ítems');
 };
 
-window.destacharTodos = () => {
+// ── COMPRAS PENDIENTES ──
+window.openCarritos = () => {
+  // Mostrar info de selección actual
+  const seleccionados = Object.values(items).filter(it => it && it.name && !it.checked);
+  document.getElementById('carritoActualInfo').textContent =
+    seleccionados.length + ' ítems sin tachar · ' +
+    [...new Set(seleccionados.map(it=>it.cat))].length + ' categorías';
+  document.getElementById('carritoNombre').value = '';
+  renderCarritos();
+  document.getElementById('panelCarritos').classList.add('on');
+  document.getElementById('ovCarritos').classList.add('on');
+  document.getElementById('bot').style.display = 'none';
+};
+
+window.closeCarritos = () => {
+  document.getElementById('panelCarritos').classList.remove('on');
+  document.getElementById('ovCarritos').classList.remove('on');
+  document.getElementById('bot').style.display = 'flex';
+};
+
+window.guardarCarrito = () => {
+  const nombre = document.getElementById('carritoNombre').value.trim() ||
+    'Compra ' + new Date().toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit'});
+
+  // Guardar snapshot de ítems NO tachados
+  const seleccionados = Object.entries(items)
+    .filter(([,it]) => it && it.name && !it.checked)
+    .map(([id,it]) => ({ id, name: it.name, cat: it.cat }));
+
+  if (!seleccionados.length) { toast('No hay ítems seleccionados'); return; }
+
+  const carrito = {
+    id: 'cart_' + Date.now(),
+    nombre,
+    fecha: new Date().toISOString(),
+    items: seleccionados,
+    total: seleccionados.length,
+  };
+
+  // Guardar local
+  try {
+    const carritos = JSON.parse(localStorage.getItem('carritos') || '[]');
+    carritos.unshift(carrito);
+    localStorage.setItem('carritos', JSON.stringify(carritos));
+  } catch(e) {}
+
+  // Guardar en Firebase
+  if (window._fbApp) {
+    const db = getDatabase(window._fbApp);
+    set(ref(db, 'lista2/carritos/' + carrito.id), carrito);
+  }
+
+  renderCarritos();
+  document.getElementById('carritoNombre').value = '';
+  toast('✅ Carrito guardado — ' + seleccionados.length + ' ítems');
+};
+
+window.eliminarCarrito = (id) => {
+  try {
+    let carritos = JSON.parse(localStorage.getItem('carritos') || '[]');
+    carritos = carritos.filter(c => c.id !== id);
+    localStorage.setItem('carritos', JSON.stringify(carritos));
+  } catch(e) {}
+  if (window._fbApp) {
+    const db = getDatabase(window._fbApp);
+    set(ref(db, 'lista2/carritos/' + id), null);
+  }
+  renderCarritos();
+  toast('Carrito eliminado');
+};
+
+window.restaurarCarrito = (id) => {
+  try {
+    const carritos = JSON.parse(localStorage.getItem('carritos') || '[]');
+    const carrito = carritos.find(c => c.id === id);
+    if (!carrito) return;
+
+    // Destachar todos primero
+    Object.keys(items).forEach(id => { if (items[id]) items[id].checked = true; });
+
+    // Destachar solo los ítems del carrito guardado
+    carrito.items.forEach(ci => {
+      if (items[ci.id]) {
+        items[ci.id].checked = false;
+      }
+    });
+
+    saveItems();
+    render();
+    closeCarritos();
+    toast('✅ Carrito restaurado — ' + carrito.items.length + ' ítems');
+  } catch(e) { toast('Error al restaurar'); }
+};
+
+function renderCarritos() {
+  let carritos = [];
+  try { carritos = JSON.parse(localStorage.getItem('carritos') || '[]'); } catch(e) {}
+  const list = document.getElementById('carritosList');
+  if (!carritos.length) {
+    list.innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted);font-size:13px">No hay compras guardadas</div>';
+    return;
+  }
+  list.innerHTML = carritos.map(c => {
+    const fecha = new Date(c.fecha).toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'});
+    const cats = [...new Set(c.items.map(i=>i.cat))];
+    return '<div style="background:var(--bg);border:1px solid var(--border);border-radius:13px;padding:12px 14px;margin-bottom:8px">' +
+      '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">' +
+        '<div style="font-weight:800;font-size:14px;color:var(--text)">' + esc(c.nombre) + '</div>' +
+        '<div style="font-size:11px;color:var(--muted)">' + fecha + '</div>' +
+      '</div>' +
+      '<div style="font-size:12px;color:var(--muted);margin-bottom:10px">' + c.total + ' ítems · ' + cats.length + ' categorías</div>' +
+      '<div style="display:flex;gap:8px">' +
+        '<button onclick="restaurarCarrito(\'' + c.id + '\')" style="flex:1;background:var(--green);color:#fff;border:none;font-family:\'Nunito\',sans-serif;font-weight:700;font-size:12px;padding:8px;border-radius:9px;cursor:pointer">↩️ Restaurar</button>' +
+        '<button onclick="eliminarCarrito(\'' + c.id + '\')" style="background:var(--bg);border:1.5px solid var(--border2);color:var(--muted);font-family:\'Nunito\',sans-serif;font-weight:700;font-size:12px;padding:8px 12px;border-radius:9px;cursor:pointer">🗑</button>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
+// Sincronizar carritos desde Firebase
+if (window._fbApp) {
+  const db = getDatabase(window._fbApp);
+  onValue(ref(db, 'lista2/carritos'), snap => {
+    const data = snap.val();
+    if (data) {
+      const arr = Object.values(data).sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
+      try { localStorage.setItem('carritos', JSON.stringify(arr)); } catch(e) {}
+    }
+  });
+} = () => {
   const ch = Object.keys(items).filter(id=>items[id]&&items[id].checked);
   if (!ch.length) { toast('No hay ítems tachados'); return; }
   ch.forEach(id=>{ items[id].checked = false; });
@@ -974,16 +1148,6 @@ function renderHistorial() {
         '</div>';
     }).join('');
   }
-}
-
-// También cargar historial de Firebase
-if (fbHistorial) {
-  onValue(fbHistorial, snap => {
-    const data = snap.val();
-    if (data) {
-      try { localStorage.setItem('historial', JSON.stringify(data)); } catch(e) {}
-    }
-  });
 }
 
 window.doShare = () => {

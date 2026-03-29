@@ -179,7 +179,8 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);max-
   </div>
 </div>
 <div class="bot" id="bot">
-  <button class="bbtn" onclick="clearChecked()">🗑 Tachados</button>
+  <button class="bbtn" onclick="destacharTodos()">↩️ Destachar</button>
+  <button class="bbtn" onclick="clearChecked()">🗑 Borrar</button>
   <button class="bbtn" onclick="openPanel()">💰 Precios</button>
   <button class="bbtn p" onclick="entrarModoCompra()">🛒 Ir al super</button>
 </div>
@@ -388,7 +389,8 @@ function catClass(cat) {
   return cat
     .replace(/[áàä]/gi,'a').replace(/[éèë]/gi,'e').replace(/[íìï]/gi,'i')
     .replace(/[óòö]/gi,'o').replace(/[úùü]/gi,'u').replace(/ñ/gi,'n')
-    .replace(/[^A-Za-z]/g,'');
+    .replace(/[^A-Za-z]/g,'')
+    .toUpperCase();
 }
 
 function renderResults() {
@@ -420,6 +422,13 @@ window.clearChecked = () => {
   if (!ch.length) { toast('No hay tachados'); return; }
   ch.forEach(id=>{delete items[id];delete prices[id];});
   saveItems(); savePrices(); render(); toast('Borrados '+ch.length+' ítems');
+};
+
+window.destacharTodos = () => {
+  const ch = Object.keys(items).filter(id=>items[id]&&items[id].checked);
+  if (!ch.length) { toast('No hay ítems tachados'); return; }
+  ch.forEach(id=>{ items[id].checked = false; });
+  saveItems(); render(); toast('Destachados '+ch.length+' ítems ✓');
 };
 window.setTab = t => { tab=t; render(); };
 window.togCat = cat => { col.has(cat)?col.delete(cat):col.add(cat); render(); };

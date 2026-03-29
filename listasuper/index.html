@@ -290,6 +290,7 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);max-
       <div style="display:flex;gap:6px">
         <button onclick="setHistView('grafico')" id="hv-grafico" style="font-size:11px;font-weight:700;padding:4px 10px;border-radius:8px;cursor:pointer;border:1.5px solid var(--gb);background:var(--gl);color:var(--green);font-family:'Nunito',sans-serif">📈 Gráfico</button>
         <button onclick="setHistView('lista')" id="hv-lista" style="font-size:11px;font-weight:700;padding:4px 10px;border-radius:8px;cursor:pointer;border:1.5px solid var(--border2);background:var(--bg);color:var(--muted);font-family:'Nunito',sans-serif">📋 Lista</button>
+        <button onclick="borrarHistorial()" style="font-size:11px;font-weight:700;padding:4px 10px;border-radius:8px;cursor:pointer;border:1.5px solid #ffab91;background:#fbe9e7;color:#b71c1c;font-family:'Nunito',sans-serif">🗑</button>
       </div>
     </div>
     <!-- Stats resumen -->
@@ -997,7 +998,7 @@ function renderModoCompra() {
             (estimado ? '<span style="font-size:12px;color:var(--muted)">'+estimado+'</span>' : '') +
             '<span style="font-size:12px;font-weight:700;color:var(--green);display:flex;align-items:center;gap:3px">' +
               '💳 $<input type="number" placeholder="real" value="'+esc(String(real))+'" ' +
-                'onchange="savePrecioReal(\''+id+'\',this.value)" ' +
+                'oninput="savePrecioReal(\''+id+'\',this.value)" ' +
                 'onclick="event.stopPropagation()" ' +
                 'onfocus="event.stopPropagation()" ' +
                 'style="border:none;border-bottom:1.5px solid var(--gb);background:transparent;font-family:\'Nunito\',sans-serif;font-weight:700;font-size:13px;color:var(--green);width:80px;outline:none;padding:2px 0">' +
@@ -1023,11 +1024,11 @@ function renderModoCompra() {
 
 // ── CERRAR COMPRA ──
 window.cerrarCompra = () => {
-  // Calcular total estimado
-  const withP = Object.entries(prices).filter(([id,p])=>items[id]&&p.precio);
-  const estimado = withP.reduce((s,[,p])=>s+(p.precio||0),0);
+  // Calcular total estimado solo de ítems comprados (tachados)
+  const withP = Object.entries(prices).filter(([id,p])=>items[id]&&items[id].checked&&(p.precioReal||p.precio));
+  const estimado = withP.reduce((s,[,p])=>s+(p.precioReal||p.precio||0),0);
   document.getElementById('compraEstimado').textContent = '$'+Math.round(estimado).toLocaleString('es-AR');
-  document.getElementById('totalRealInput').value = '';
+  document.getElementById('totalRealInput').value = estimado > 0 ? Math.round(estimado) : '';
   document.getElementById('superInput').value = '';
   renderHistorial();
   document.getElementById('panelCompra').classList.add('on');
@@ -1047,8 +1048,8 @@ window.guardarCompra = () => {
   const total = parseInt(totalStr.replace(/\./g,''));
   if (isNaN(total) || total <= 0) { toast('Total inválido'); return; }
   const super_ = document.getElementById('superInput').value.trim();
-  const withP = Object.entries(prices).filter(([id,p])=>items[id]&&p.precio);
-  const estimado = Math.round(withP.reduce((s,[,p])=>s+(p.precio||0),0));
+  const withP = Object.entries(prices).filter(([id,p])=>items[id]&&items[id].checked&&(p.precioReal||p.precio));
+  const estimado = Math.round(withP.reduce((s,[,p])=>s+(p.precioReal||p.precio||0),0));
   const compra = {
     fecha: new Date().toISOString(),
     total,
@@ -1071,6 +1072,17 @@ window.guardarCompra = () => {
   toast('✅ Compra guardada — $'+total.toLocaleString('es-AR'));
   renderHistorial();
   setTimeout(closeCompra, 1500);
+};
+
+window.borrarHistorial = () => {
+  if (!confirm('¿Borrar todo el historial de compras? Esta acción no se puede deshacer.')) return;
+  localStorage.removeItem('historial');
+  if (window._fbApp) {
+    const db = getDatabase(window._fbApp);
+    set(ref(db, 'lista2/historial'), null);
+  }
+  renderHistorial();
+  toast('Historial borrado');
 };
 
 let histView = 'grafico';

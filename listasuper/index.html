@@ -459,13 +459,14 @@ function savePrices() {
 
 // ── RENDER ──
 function render() {
-  const ids = Object.keys(items);
-  const done = ids.filter(id => items[id] && items[id].checked).length;
+  const ids = Object.keys(items).filter(id => items[id] && items[id].name);
+  const pendientes = ids.filter(id => !items[id].checked);
+  const comprados = ids.filter(id => items[id].checked);
   const total = ids.length;
-  const pct = total ? Math.round(done/total*100) : 0;
+  const pct = total ? Math.round(comprados.length/total*100) : 0;
   document.getElementById('pf').style.width = pct+'%';
   document.getElementById('pp').textContent = pct+'%';
-  if (fbConnected) document.getElementById('subTxt').textContent = done+' de '+total+' comprados';
+  if (fbConnected) document.getElementById('subTxt').textContent = pendientes.length+' pendientes · '+comprados.length+' comprados';
   renderTabs(ids);
   renderList(ids);
 }
@@ -884,7 +885,8 @@ function updateBudgetBar() {
   if (!budget) { section.style.display = 'none'; return; }
   section.style.display = '';
 
-  // Sumar precios reales de ítems comprados
+  // Sumar precios de ítems YA comprados (tachados en modo compra)
+  // En modo compra: checked=true significa que lo pusiste en el chango
   const gastado = Object.entries(items)
     .filter(([,it]) => it && it.checked)
     .reduce((s, [id]) => {
@@ -892,6 +894,15 @@ function updateBudgetBar() {
       return s + (p?.precioReal || p?.precio || 0);
     }, 0);
 
+  // Total estimado de toda la lista pendiente
+  const totalPendiente = Object.entries(items)
+    .filter(([,it]) => it && !it.checked)
+    .reduce((s, [id]) => {
+      const p = prices[id];
+      return s + (p?.precioReal || p?.precio || 0);
+    }, 0);
+
+  const referencia = gastado + totalPendiente || budget;
   const pct = Math.min(Math.round(gastado / budget * 100), 100);
   const disponible = Math.max(budget - gastado, 0);
 
@@ -902,7 +913,6 @@ function updateBudgetBar() {
   bar.style.width = pct + '%';
   bar.style.background = pct >= 100 ? '#e74c3c' : pct >= 80 ? '#f39c12' : '#fff';
 
-  // Alerta si supera el límite
   if (pct >= 100 && gastado > 0) {
     document.getElementById('mcSub').textContent = '⚠️ Superaste el presupuesto!';
   }

@@ -198,7 +198,29 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);max-
       </div>
       <button class="mc-close" onclick="salirModoCompra()">✕</button>
     </div>
+    <!-- Barra de ítems comprados -->
     <div class="mc-prog-track"><div class="mc-prog-fill" id="mcProg" style="width:0%"></div></div>
+    <!-- Barra de presupuesto -->
+    <div id="mcBudgetSection" style="margin-top:10px;display:none">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
+        <span style="font-size:11px;opacity:.85" id="mcBudgetLbl">Gastado: $0</span>
+        <span style="font-size:11px;opacity:.85" id="mcBudgetRest">Disponible: $0</span>
+      </div>
+      <div style="height:8px;background:rgba(255,255,255,.25);border-radius:4px;overflow:hidden">
+        <div id="mcBudgetBar" style="height:100%;width:0%;border-radius:4px;transition:width .4s,background .3s;background:#fff"></div>
+      </div>
+    </div>
+    <!-- Config presupuesto -->
+    <div style="margin-top:10px;display:flex;align-items:center;gap:8px">
+      <span style="font-size:11px;opacity:.7">💰 Límite:</span>
+      <div style="display:flex;align-items:center;background:rgba(255,255,255,.15);border-radius:8px;padding:3px 8px;gap:2px">
+        <span style="font-size:12px;opacity:.8">$</span>
+        <input id="mcBudgetInput" type="number" placeholder="sin límite"
+          style="background:transparent;border:none;color:#fff;font-family:'Nunito',sans-serif;font-weight:700;font-size:13px;width:90px;outline:none;opacity:.9"
+          onchange="setBudget(this.value)"
+          onclick="event.stopPropagation()">
+      </div>
+    </div>
   </div>
   <div class="mc-list" id="mcList"></div>
   <div class="mc-bot">
@@ -450,9 +472,21 @@ function renderResults() {
   document.getElementById('totalAmt').textContent = '$'+Math.round(tot).toLocaleString('es-AR');
   document.getElementById('totalSub').textContent = withP.length+' ítems'+(conReal?' · '+conReal+' con precio real':'');
   list.innerHTML = withP.map(([id,p])=>{
-    const real = p.precioReal ? '<span style="background:#eaf4ee;color:var(--green);border:1px solid var(--gb);font-size:11px;font-weight:700;padding:2px 7px;border-radius:6px">💳 $'+Number(p.precioReal).toLocaleString('es-AR')+'</span>' : '';
-    const est = p.precio ? '<span class="ptag" style="'+(p.precioReal?'opacity:.5':'')+'">🤖 $'+p.precio.toLocaleString('es-AR')+'</span>' : '';
-    return '<div class="rrow"><div class="rname">'+esc(items[id]?.name||'')+'</div><div style="display:flex;gap:4px">'+real+est+'</div></div>';
+    const real = p.precioReal ? Number(p.precioReal) : null;
+    const est = p.precio || null;
+    const realTag = real ? '<span style="background:#eaf4ee;color:var(--green);border:1px solid var(--gb);font-size:11px;font-weight:700;padding:2px 7px;border-radius:6px">💳 $'+real.toLocaleString('es-AR')+'</span>' : '';
+    const estTag = est ? '<span class="ptag" style="'+(real?'opacity:.5':'')+'">🤖 $'+est.toLocaleString('es-AR')+'</span>' : '';
+    let diffTag = '';
+    if (real && est) {
+      const diff = real - est;
+      const pct = Math.round(diff / est * 100);
+      const color = diff > 0 ? '#c0392b' : '#2d6a4f';
+      const bg = diff > 0 ? '#fdecea' : '#eaf4ee';
+      const border = diff > 0 ? '#f5b7b1' : '#95d5b2';
+      const sign = diff > 0 ? '+' : '';
+      diffTag = '<span style="background:'+bg+';color:'+color+';border:1px solid '+border+';font-size:11px;font-weight:700;padding:2px 7px;border-radius:6px">'+sign+pct+'%</span>';
+    }
+    return '<div class="rrow"><div class="rname">'+esc(items[id]?.name||'')+'</div><div style="display:flex;gap:4px;align-items:center">'+realTag+estTag+diffTag+'</div></div>';
   }).join('');
 }
 
@@ -484,6 +518,7 @@ window.savePrecioReal = (id, val) => {
   const n = parseInt(val);
   prices[id].precioReal = (!val || isNaN(n)) ? '' : n;
   savePrices();
+  updateBudgetBar();
 
   // Actualizar base de precios de referencia con el precio real
   if (n && !isNaN(n) && n > 100 && items[id]?.name) {
@@ -574,7 +609,54 @@ window.scanAll = async () => {
 };
 
 // ── MODO COMPRA ──
+window.setBudget = (val) => {
+  const n = parseInt(val);
+  if (!isNaN(n) && n > 0) {
+    localStorage.setItem('mc_budget', n);
+    window._budget = n;
+  } else {
+    localStorage.removeItem('mc_budget');
+    window._budget = 0;
+  }
+  updateBudgetBar();
+};
+
+function updateBudgetBar() {
+  const budget = window._budget || 0;
+  const section = document.getElementById('mcBudgetSection');
+  if (!budget) { section.style.display = 'none'; return; }
+  section.style.display = '';
+
+  // Sumar precios reales de ítems comprados
+  const gastado = Object.entries(items)
+    .filter(([,it]) => it && it.checked)
+    .reduce((s, [id]) => {
+      const p = prices[id];
+      return s + (p?.precioReal || p?.precio || 0);
+    }, 0);
+
+  const pct = Math.min(Math.round(gastado / budget * 100), 100);
+  const disponible = Math.max(budget - gastado, 0);
+
+  document.getElementById('mcBudgetLbl').textContent = 'Gastado: $' + Math.round(gastado).toLocaleString('es-AR');
+  document.getElementById('mcBudgetRest').textContent = 'Disponible: $' + disponible.toLocaleString('es-AR');
+
+  const bar = document.getElementById('mcBudgetBar');
+  bar.style.width = pct + '%';
+  bar.style.background = pct >= 100 ? '#e74c3c' : pct >= 80 ? '#f39c12' : '#fff';
+
+  // Alerta si supera el límite
+  if (pct >= 100 && gastado > 0) {
+    document.getElementById('mcSub').textContent = '⚠️ Superaste el presupuesto!';
+  }
+}
+
 window.entrarModoCompra = () => {
+  // Cargar presupuesto guardado
+  const saved = localStorage.getItem('mc_budget');
+  window._budget = saved ? parseInt(saved) : 0;
+  const input = document.getElementById('mcBudgetInput');
+  if (input) input.value = window._budget || '';
   renderModoCompra();
   document.getElementById('mcOverlay').classList.add('on');
   document.body.style.overflow = 'hidden';
@@ -595,6 +677,7 @@ window.mcTogItem = id => {
   items[id].checked = !items[id].checked;
   saveItems();
   renderModoCompra();
+  updateBudgetBar();
   render();
 };
 

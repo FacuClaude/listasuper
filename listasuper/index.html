@@ -885,10 +885,26 @@ function updateBudgetBar() {
   if (!budget) { section.style.display = 'none'; return; }
   section.style.display = '';
 
-  // Solo sumar ítems con precio REAL cargado (💳) — el usuario lo ingresó manualmente
-  const gastado = Object.entries(prices)
-    .filter(([id, p]) => p?.precioReal && items[id] && items[id].checked)
-    .reduce((s, [,p]) => s + Number(p.precioReal), 0);
+  // Para cada ítem tachado, usar en orden:
+  // 1. Precio real ingresado en esta sesión (💳)
+  // 2. Precio real guardado de compras anteriores (preciosRef)
+  // 3. No sumar si no hay ninguno
+  const preciosRef = window._preciosRefFB || {};
+
+  const gastado = Object.entries(items)
+    .filter(([,it]) => it && it.checked)
+    .reduce((s, [id, it]) => {
+      const p = prices[id];
+      // Precio real de esta sesión
+      if (p?.precioReal) return s + Number(p.precioReal);
+      // Precio real de compra anterior guardado en preciosRef
+      const refEntry = Object.values(preciosRef).find(r =>
+        r?.nombre && it?.name &&
+        r.nombre.toLowerCase().slice(0,8) === it.name.toLowerCase().slice(0,8)
+      );
+      if (refEntry?.precio) return s + refEntry.precio;
+      return s;
+    }, 0);
 
   const pct = Math.min(Math.round(gastado / budget * 100), 100);
   const disponible = Math.max(budget - gastado, 0);

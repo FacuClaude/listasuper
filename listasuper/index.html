@@ -53,6 +53,9 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);max-
 .iprices{display:flex;gap:4px;margin-top:4px}
 .ptag{font-size:11px;font-weight:700;padding:2px 8px;border-radius:6px;background:#e8f1fb;color:#1a5fa8;border:1px solid #7ab3e8}
 .idel{background:none;border:none;color:var(--border2);cursor:pointer;font-size:14px;padding:3px 5px;line-height:1}
+.inota{width:100%;background:transparent;border:1px solid transparent;border-radius:6px;font-family:'Nunito',sans-serif;font-size:11px;color:var(--muted);padding:2px 4px;margin-top:3px;outline:none;transition:border-color .2s}
+.inota::placeholder{color:var(--border2)}
+.inota:focus{background:var(--bg);color:var(--text2)}
 .overlay{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:70;opacity:0;pointer-events:none;transition:opacity .3s}
 .overlay.on{opacity:1;pointer-events:all}
 .panel{position:fixed;bottom:0;left:50%;transform:translateX(-50%) translateY(100%);width:100%;max-width:480px;background:var(--white);border-radius:22px 22px 0 0;padding:14px 18px 48px;z-index:80;max-height:86vh;overflow-y:auto;box-shadow:var(--shadow-lg);transition:transform .3s cubic-bezier(.32,.72,0,1)}
@@ -301,6 +304,12 @@ try {
   fbPrices = ref(db, 'lista2/prices');
   fbHistorial = ref(db, 'lista2/historial');
 
+  // Cargar precios de referencia personalizados
+  const preciosRefFbRef = ref(db, 'lista2/preciosRef');
+  onValue(preciosRefFbRef, snap => {
+    window._preciosRefFB = snap.val() || {};
+  });
+
   onValue(fbItems, snap => {
     const data = snap.val();
     // Verificar que haya ítems válidos (con nombre)
@@ -378,10 +387,44 @@ function renderList(ids) {
 function renderItem(id) {
   const it = items[id]; if (!it) return '';
   const p = prices[id]||{};
-  const pt = p.precio ? '<div class="iprices"><span class="ptag">🤖 $'+p.precio.toLocaleString('es-AR')+'</span></div>' : '';
+  const nota = it.nota || '';
+  const precioReal = p.precioReal || '';
+  let preciosHtml = '';
+  if (p.precio || precioReal) {
+    preciosHtml = '<div class="iprices">' +
+      (p.precio ? '<span class="ptag">🤖 $'+p.precio.toLocaleString('es-AR')+'</span>' : '') +
+      '<span class="ptag-real">' +
+        '<span style="color:var(--muted);font-size:10px">💳</span> $' +
+        '<input class="iprecio-real" type="number" placeholder="precio real" value="'+esc(precioReal)+'" ' +
+          'onchange="savePrecioReal(\''+id+'\',this.value)" ' +
+          'onclick="event.stopPropagation()" ' +
+          'onfocus="event.stopPropagation()" ' +
+          'style="border:none;background:transparent;font-family:\'Nunito\',sans-serif;font-weight:700;font-size:11px;color:var(--green);width:70px;outline:none;padding:0">' +
+      '</span>' +
+    '</div>';
+  } else {
+    preciosHtml = '<div class="iprices">' +
+      '<span class="ptag-real" style="background:#f0faf4;color:var(--green);border:1px solid var(--gb);font-size:11px;font-weight:700;padding:2px 7px;border-radius:6px;display:inline-flex;align-items:center;gap:3px">' +
+        '<span style="color:var(--muted);font-size:10px">💳</span> $' +
+        '<input class="iprecio-real" type="number" placeholder="precio real" value="'+esc(precioReal)+'" ' +
+          'onchange="savePrecioReal(\''+id+'\',this.value)" ' +
+          'onclick="event.stopPropagation()" ' +
+          'onfocus="event.stopPropagation()" ' +
+          'style="border:none;background:transparent;font-family:\'Nunito\',sans-serif;font-weight:700;font-size:11px;color:var(--green);width:70px;outline:none;padding:0">' +
+      '</span>' +
+    '</div>';
+  }
   return '<div class="item'+(it.checked?' done':'')+'" id="it_'+id+'">' +
     '<div class="chk" onclick="togItem(\''+id+'\')">'+(it.checked?'✓':'')+'</div>' +
-    '<div class="iinfo"><div class="iname">'+esc(it.name)+'</div>'+pt+'</div>' +
+    '<div class="iinfo">' +
+      '<div class="iname">'+esc(it.name)+'</div>' +
+      preciosHtml +
+      '<input class="inota" placeholder="Agregar nota..." value="'+esc(nota)+'" ' +
+        'onchange="saveNota(\''+id+'\',this.value)" ' +
+        'onclick="event.stopPropagation()" ' +
+        'onfocus="this.style.borderColor=\'var(--green)\'" ' +
+        'onblur="this.style.borderColor=\'transparent\'">' +
+    '</div>' +
     '<button class="idel" onclick="delItem(\''+id+'\')">✕</button></div>';
 }
 
@@ -394,17 +437,23 @@ function catClass(cat) {
 }
 
 function renderResults() {
-  const withP = Object.entries(prices).filter(([id,p])=>items[id]&&p.precio);
+  const withP = Object.entries(prices).filter(([id,p])=>items[id]&&(p.precio||p.precioReal));
   const empty = document.getElementById('resEmpty');
   const list = document.getElementById('resList');
   const box = document.getElementById('totalBox');
   if (!withP.length) { empty.style.display=''; list.innerHTML=''; box.classList.remove('on'); return; }
   empty.style.display = 'none';
-  const tot = withP.reduce((s,[,p])=>s+(p.precio||0),0);
+  // Usar precio real si existe, sino estimado
+  const tot = withP.reduce((s,[,p])=>s+(p.precioReal||p.precio||0),0);
+  const conReal = withP.filter(([,p])=>p.precioReal).length;
   box.classList.add('on');
   document.getElementById('totalAmt').textContent = '$'+Math.round(tot).toLocaleString('es-AR');
-  document.getElementById('totalSub').textContent = withP.length+' ítems con precio';
-  list.innerHTML = withP.map(([id,p])=>'<div class="rrow"><div class="rname">'+esc(items[id]?.name||'')+'</div><span class="ptag">🤖 $'+p.precio.toLocaleString('es-AR')+'</span></div>').join('');
+  document.getElementById('totalSub').textContent = withP.length+' ítems'+(conReal?' · '+conReal+' con precio real':'');
+  list.innerHTML = withP.map(([id,p])=>{
+    const real = p.precioReal ? '<span style="background:#eaf4ee;color:var(--green);border:1px solid var(--gb);font-size:11px;font-weight:700;padding:2px 7px;border-radius:6px">💳 $'+Number(p.precioReal).toLocaleString('es-AR')+'</span>' : '';
+    const est = p.precio ? '<span class="ptag" style="'+(p.precioReal?'opacity:.5':'')+'">🤖 $'+p.precio.toLocaleString('es-AR')+'</span>' : '';
+    return '<div class="rrow"><div class="rname">'+esc(items[id]?.name||'')+'</div><div style="display:flex;gap:4px">'+real+est+'</div></div>';
+  }).join('');
 }
 
 // ── ACCIONES ──
@@ -430,7 +479,35 @@ window.destacharTodos = () => {
   ch.forEach(id=>{ items[id].checked = false; });
   saveItems(); render(); toast('Destachados '+ch.length+' ítems ✓');
 };
-window.setTab = t => { tab=t; render(); };
+window.savePrecioReal = (id, val) => {
+  if (!prices[id]) prices[id] = {};
+  const n = parseInt(val);
+  prices[id].precioReal = (!val || isNaN(n)) ? '' : n;
+  savePrices();
+
+  // Actualizar base de precios de referencia con el precio real
+  if (n && !isNaN(n) && n > 100 && items[id]?.name) {
+    const nombre = items[id].name;
+    // Guardar en Firebase como precio de referencia personalizado
+    if (window._fbApp) {
+      const db = getDatabase(window._fbApp);
+      const precioRefRef = ref(db, 'lista2/preciosRef/' + id);
+      set(precioRefRef, { nombre, precio: n, fecha: new Date().toISOString() });
+    }
+    // También guardar local para uso offline
+    try {
+      const refs = JSON.parse(localStorage.getItem('preciosRef') || '{}');
+      refs[nombre.toLowerCase()] = n;
+      localStorage.setItem('preciosRef', JSON.stringify(refs));
+    } catch(e) {}
+  }
+};
+
+window.saveNota = (id, val) => {
+  if (!items[id]) return;
+  items[id].nota = val.trim();
+  saveItems();
+};
 window.togCat = cat => { col.has(cat)?col.delete(cat):col.add(cat); render(); };
 window.openPanel = () => { document.getElementById('panel').classList.add('on'); document.getElementById('ov').classList.add('on'); document.getElementById('bot').style.display='none'; document.getElementById('pbtn').classList.add('on'); };
 window.closePanel = () => { document.getElementById('panel').classList.remove('on'); document.getElementById('ov').classList.remove('on'); document.getElementById('bot').style.display='flex'; document.getElementById('pbtn').classList.remove('on'); };
@@ -441,6 +518,31 @@ const PDB = {'arándano':3500,'mora':3200,'primavera':2000,'helado':2800,'espina
 
 function estimarPrecio(name) {
   const q = name.toLowerCase();
+
+  // 1. Buscar en precios reales guardados por el usuario (mayor prioridad)
+  try {
+    const refs = JSON.parse(localStorage.getItem('preciosRef') || '{}');
+    for (const [key, precio] of Object.entries(refs)) {
+      if (q.includes(key.slice(0,8)) || key.includes(q.slice(0,8))) {
+        return precio; // Precio real exacto, sin variación
+      }
+    }
+  } catch(e) {}
+
+  // 2. Buscar en Firebase precios de referencia
+  // (ya cargados en memoria al iniciar)
+  if (window._preciosRefFB) {
+    for (const [,data] of Object.entries(window._preciosRefFB)) {
+      if (data?.nombre && data?.precio) {
+        const k = data.nombre.toLowerCase();
+        if (q.includes(k.slice(0,8)) || k.includes(q.slice(0,8))) {
+          return data.precio;
+        }
+      }
+    }
+  }
+
+  // 3. Fallback: base de estimación genérica con variación
   for (const [k,v] of Object.entries(PDB)) {
     if (q.includes(k) || k.split(' ').every(w=>q.includes(w.slice(0,4)))) {
       return Math.round(v*(0.90+Math.random()*0.20)/50)*50;
@@ -525,13 +627,26 @@ function renderModoCompra() {
     html += '<div class="mc-cat">' +
       '<div class="mc-cat-lbl">' + (CATS[cat] || '📦') + ' ' + cat + '</div>';
     bycat[cat].forEach(([id, it]) => {
-      const p = prices[id];
-      const precioStr = p?.precio ? '$' + p.precio.toLocaleString('es-AR') : '';
+      const p = prices[id]||{};
+      const estimado = p.precio ? '🤖 $'+p.precio.toLocaleString('es-AR') : '';
+      const real = p.precioReal || '';
       html += '<div class="mc-item" onclick="mcTogItem(\'' + id + '\')">' +
         '<div class="mc-chk"></div>' +
-        '<div><div class="mc-iname">' + esc(it.name) + '</div>' +
-        (precioStr ? '<div class="mc-price">' + precioStr + '</div>' : '') +
-        '</div></div>';
+        '<div style="flex:1">' +
+          '<div class="mc-iname">' + esc(it.name) + '</div>' +
+          (it.nota ? '<div style="font-size:12px;color:var(--muted);margin-top:2px">📝 '+esc(it.nota)+'</div>' : '') +
+          '<div style="display:flex;align-items:center;gap:8px;margin-top:4px">' +
+            (estimado ? '<span style="font-size:12px;color:var(--muted)">'+estimado+'</span>' : '') +
+            '<span style="font-size:12px;font-weight:700;color:var(--green);display:flex;align-items:center;gap:3px">' +
+              '💳 $<input type="number" placeholder="real" value="'+esc(String(real))+'" ' +
+                'onchange="savePrecioReal(\''+id+'\',this.value)" ' +
+                'onclick="event.stopPropagation()" ' +
+                'onfocus="event.stopPropagation()" ' +
+                'style="border:none;border-bottom:1.5px solid var(--gb);background:transparent;font-family:\'Nunito\',sans-serif;font-weight:700;font-size:13px;color:var(--green);width:80px;outline:none;padding:2px 0">' +
+            '</span>' +
+          '</div>' +
+        '</div>' +
+      '</div>';
     });
     html += '</div>';
   });

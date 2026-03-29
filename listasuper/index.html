@@ -885,24 +885,15 @@ function updateBudgetBar() {
   if (!budget) { section.style.display = 'none'; return; }
   section.style.display = '';
 
-  // Sumar precios de ítems YA comprados (tachados en modo compra)
-  // En modo compra: checked=true significa que lo pusiste en el chango
+  // Solo sumar ítems tachados en ESTA sesión (no los que ya estaban tachados antes)
+  const antes = window._tachadosAntes || new Set();
   const gastado = Object.entries(items)
-    .filter(([,it]) => it && it.checked)
+    .filter(([id, it]) => it && it.checked && !antes.has(id))
     .reduce((s, [id]) => {
       const p = prices[id];
       return s + (p?.precioReal || p?.precio || 0);
     }, 0);
 
-  // Total estimado de toda la lista pendiente
-  const totalPendiente = Object.entries(items)
-    .filter(([,it]) => it && !it.checked)
-    .reduce((s, [id]) => {
-      const p = prices[id];
-      return s + (p?.precioReal || p?.precio || 0);
-    }, 0);
-
-  const referencia = gastado + totalPendiente || budget;
   const pct = Math.min(Math.round(gastado / budget * 100), 100);
   const disponible = Math.max(budget - gastado, 0);
 
@@ -919,12 +910,17 @@ function updateBudgetBar() {
 }
 
 window.entrarModoCompra = () => {
+  // Guardar snapshot de qué estaba tachado ANTES de entrar al modo compra
+  window._tachadosAntes = new Set(
+    Object.keys(items).filter(id => items[id] && items[id].checked)
+  );
   // Cargar presupuesto guardado
   const saved = localStorage.getItem('mc_budget');
   window._budget = saved ? parseInt(saved) : 0;
   const input = document.getElementById('mcBudgetInput');
   if (input) input.value = window._budget || '';
   renderModoCompra();
+  updateBudgetBar();
   document.getElementById('mcOverlay').classList.add('on');
   document.body.style.overflow = 'hidden';
 };

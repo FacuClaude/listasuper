@@ -166,8 +166,18 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);max-
   <div class="ptabs">
     <button class="ptab on" id="pt-cfg" onclick="setPTab('cfg')">⚙️ Configurar</button>
     <button class="ptab" id="pt-res" onclick="setPTab('res')">📊 Resultados</button>
+    <button class="ptab" id="pt-hist" onclick="setPTab('hist')">📈 Historial</button>
   </div>
   <div id="pv-cfg">
+    <!-- Selector de moneda -->
+    <div style="background:var(--bg);border:1px solid var(--border);border-radius:13px;padding:12px 14px;margin-bottom:12px">
+      <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:8px">💱 Moneda</div>
+      <div style="display:flex;gap:8px">
+        <button id="cur-ARS" onclick="setCurrency('ARS')" style="flex:1;padding:9px;border-radius:10px;font-family:'Nunito',sans-serif;font-weight:700;font-size:13px;cursor:pointer;border:1.5px solid var(--green);background:var(--green);color:#fff">🇦🇷 ARS $</button>
+        <button id="cur-USD" onclick="setCurrency('USD')" style="flex:1;padding:9px;border-radius:10px;font-family:'Nunito',sans-serif;font-weight:700;font-size:13px;cursor:pointer;border:1.5px solid var(--border2);background:var(--bg);color:var(--muted)">🇺🇸 USD $</button>
+        <button id="cur-EUR" onclick="setCurrency('EUR')" style="flex:1;padding:9px;border-radius:10px;font-family:'Nunito',sans-serif;font-weight:700;font-size:13px;cursor:pointer;border:1.5px solid var(--border2);background:var(--bg);color:var(--muted)">🇪🇺 EUR €</button>
+      </div>
+    </div>
     <div class="sp" id="sp"><div class="sp-lbl" id="spLbl">Consultando...</div><div class="sp-track"><div class="sp-fill" id="spBar" style="width:0%"></div></div></div>
     <div style="background:#e8f1fb;border:1.5px solid #7ab3e8;border-radius:13px;padding:12px 14px;margin-bottom:10px;display:flex;align-items:center;gap:12px">
       <span style="font-size:22px">🤖</span>
@@ -179,6 +189,19 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);max-
     <div class="total" id="totalBox"><div><div class="total-lbl">Total estimado</div><div class="total-sub" id="totalSub"></div></div><div class="total-amt" id="totalAmt">$0</div></div>
     <div id="resList"></div>
     <div id="resEmpty" style="text-align:center;padding:40px;color:var(--muted)"><div style="font-size:36px;margin-bottom:10px">🔍</div><div style="font-weight:700">Sin resultados</div><div style="font-size:12px;margin-top:6px">Tocá Configurar → Escanear</div></div>
+  </div>
+  <div id="pv-hist" style="display:none">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+      <div style="font-weight:800;font-size:14px;color:var(--text)">📊 Historial de compras</div>
+      <div style="display:flex;gap:6px">
+        <button onclick="setHistView('grafico')" id="hv-grafico2" style="font-size:11px;font-weight:700;padding:4px 10px;border-radius:8px;cursor:pointer;border:1.5px solid var(--gb);background:var(--gl);color:var(--green);font-family:'Nunito',sans-serif">📈 Gráfico</button>
+        <button onclick="setHistView('lista')" id="hv-lista2" style="font-size:11px;font-weight:700;padding:4px 10px;border-radius:8px;cursor:pointer;border:1.5px solid var(--border2);background:var(--bg);color:var(--muted);font-family:'Nunito',sans-serif">📋 Lista</button>
+        <button onclick="borrarHistorial()" style="font-size:11px;font-weight:700;padding:4px 10px;border-radius:8px;cursor:pointer;border:1.5px solid #ffab91;background:#fbe9e7;color:#b71c1c;font-family:'Nunito',sans-serif">🗑</button>
+      </div>
+    </div>
+    <div id="histStats2" style="display:none;background:var(--gl);border:1.5px solid var(--gb);border-radius:13px;padding:12px 14px;margin-bottom:14px"></div>
+    <div id="histGrafico2" style="margin-bottom:14px"></div>
+    <div id="historialList2"><div style="text-align:center;padding:20px;color:var(--muted);font-size:13px">Aún no hay compras registradas</div></div>
   </div>
 </div>
 <div class="bot" id="bot">
@@ -338,9 +361,18 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);max-
 <div class="toast" id="toast"></div>
 
 <script type="module">
-// MODO DEMO - sin Firebase
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, onValue, set } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
-
+const FB = {
+  apiKey:"AIzaSyC7crxIrqn45Bv4JeMnFDpP4jr06RKhBsY",
+  authDomain:"listasuper-fecaf.firebaseapp.com",
+  databaseURL:"https://listasuper-fecaf-default-rtdb.firebaseio.com",
+  projectId:"listasuper-fecaf",
+  storageBucket:"listasuper-fecaf.firebasestorage.app",
+  messagingSenderId:"400583464780",
+  appId:"1:400583464780:web:11e59a2f051407c74be1e9"
+};
 
 const CATS = {CONGELADOS:'🧊',ALACENA:'🥫','LÁCTEOS':'🥛','PANADERÍA':'🍞','CARNICERÍA':'🥩','VERDULERÍA':'🥕',HIGIENE:'🧴',LIMPIEZA:'🧽','PAPELERÍA':'📦','DIETÉTICA':'🥜',BAZAR:'🍳',OTROS:'🏷️'};
 const CAT_ORDER = Object.keys(CATS);
@@ -362,7 +394,7 @@ const INITIAL = [
 
 // ── STATE ──
 let items = {}, prices = {}, col = new Set(), tab = 'TODOS', ptab = 'cfg';
-let fbItems=null, fbPrices=null, fbHistorial=null, fbConnected = false;
+let fbItems, fbPrices, fbHistorial, fbConnected = false;
 
 // ── PASO 1: Cargar lista local inmediatamente ──
 function loadLocal() {
@@ -374,71 +406,13 @@ function loadLocal() {
 loadLocal();
 render(); // Mostrar lista inmediatamente
 
-// ── MODO DEMO ──
+// ── MODO DEMO — sin Firebase ──
 document.getElementById('dot').className = 'dot ok';
 document.getElementById('subTxt').textContent = '🧪 Modo demo · los cambios no se guardan';
 fbConnected = true;
-if (false) { // Firebase deshabilitado en demo
-try {
-  const fbApp = initializeApp(FB);
-  const db = getDatabase(fbApp);
-  window._fbApp = fbApp;
-  fbItems = ref(db, 'lista2/items');
-  fbPrices = ref(db, 'lista2/prices');
-  fbHistorial = ref(db, 'lista2/historial');
 
-  // Cargar precios de referencia personalizados
-  const preciosRefFbRef = ref(db, 'lista2/preciosRef');
-  onValue(preciosRefFbRef, snap => {
-    window._preciosRefFB = snap.val() || {};
-  });
-
-  onValue(fbItems, snap => {
-    const data = snap.val();
-    // Verificar que haya ítems válidos (con nombre)
-    const validItems = data ? Object.entries(data).filter(([,v]) => v && v.name) : [];
-    if (validItems.length > 0) {
-      // Firebase tiene datos válidos — usar esos
-      items = Object.fromEntries(validItems);
-    } else {
-      // Firebase vacío o sin datos válidos — subir lista local
-      const localItems = {};
-      INITIAL.forEach((d,i) => { localItems['i'+i] = {name:d.n, cat:d.c, checked:!!d.ch, ts:i}; });
-      items = localItems;
-      set(fbItems, items);
-    }
-    fbConnected = true;
-    document.getElementById('dot').className = 'dot ok';
-    document.getElementById('subTxt').textContent = 'Sincronizado en tiempo real ✓';
-    render();
-  });
-
-  onValue(fbPrices, snap => {
-    const data = snap.val();
-    if (data) { prices = data; renderResults(); }
-  });
-
-  // Sincronizar carritos
-  onValue(ref(db, 'lista2/carritos'), snap => {
-    const data = snap.val();
-    if (data) {
-      const arr = Object.values(data).sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
-      try { localStorage.setItem('carritos', JSON.stringify(arr)); } catch(e) {}
-    }
-  });
-
-  // Sincronizar historial
-  onValue(fbHistorial, snap => {
-    const data = snap.val();
-    if (data) { try { localStorage.setItem('historial', JSON.stringify(data)); } catch(e) {} }
-  });
-
-} catch(e) {
-  document.getElementById('subTxt').textContent = 'Sin sincronización';
-}} // fin if false
-
-function saveItems() { /* DEMO: sin guardado */ }
-function savePrices() { /* DEMO: sin guardado */ }
+function saveItems() { /* DEMO */ }
+function savePrices() { /* DEMO */ }
 
 // ── RENDER ──
 function render() {
@@ -545,7 +519,7 @@ function renderResults() {
   const tot = withP.reduce((s,[,p])=>s+(p.precioReal||p.precio||0),0);
   const conReal = withP.filter(([,p])=>p.precioReal).length;
   box.classList.add('on');
-  document.getElementById('totalAmt').textContent = '$'+Math.round(tot).toLocaleString('es-AR');
+  document.getElementById('totalAmt').textContent = fmtPrice(tot);
   document.getElementById('totalSub').textContent = withP.length+' ítems'+(conReal?' · '+conReal+' con precio real':'');
   list.innerHTML = withP.map(([id,p])=>{
     const real = p.precioReal ? Number(p.precioReal) : null;
@@ -714,6 +688,46 @@ if (window._fbApp) {
   });
 }
 
+// ── MONEDA ──
+let currency = localStorage.getItem('currency') || 'ARS';
+const CURRENCY_SYMBOL = { ARS: '$', USD: '$', EUR: '€' };
+const CURRENCY_LOCALE = { ARS: 'es-AR', USD: 'en-US', EUR: 'de-DE' };
+
+function sym() { return CURRENCY_SYMBOL[currency] || '$'; }
+function fmtPrice(n) {
+  if (!n && n !== 0) return '';
+  return sym() + Math.round(n).toLocaleString(CURRENCY_LOCALE[currency]);
+}
+
+window.setCurrency = (cur) => {
+  currency = cur;
+  localStorage.setItem('currency', cur);
+  // Actualizar botones
+  ['ARS','USD','EUR'].forEach(c => {
+    const btn = document.getElementById('cur-'+c);
+    if (!btn) return;
+    const active = c === cur;
+    btn.style.background = active ? 'var(--green)' : 'var(--bg)';
+    btn.style.color = active ? '#fff' : 'var(--muted)';
+    btn.style.borderColor = active ? 'var(--green)' : 'var(--border2)';
+  });
+  render();
+  renderResults();
+};
+
+// Inicializar botones al cargar
+function initCurrencyBtns() {
+  ['ARS','USD','EUR'].forEach(c => {
+    const btn = document.getElementById('cur-'+c);
+    if (!btn) return;
+    const active = c === currency;
+    btn.style.background = active ? 'var(--green)' : 'var(--bg)';
+    btn.style.color = active ? '#fff' : 'var(--muted)';
+    btn.style.borderColor = active ? 'var(--green)' : 'var(--border2)';
+  });
+}
+setTimeout(initCurrencyBtns, 100);
+
 window.destacharTodos = () => {
   const ch = Object.keys(items).filter(id=>items[id]&&items[id].checked);
   if (!ch.length) { toast('No hay ítems tachados'); return; }
@@ -787,7 +801,14 @@ window.saveNota = (id, val) => {
 window.togCat = cat => { col.has(cat)?col.delete(cat):col.add(cat); render(); };
 window.openPanel = () => { document.getElementById('panel').classList.add('on'); document.getElementById('ov').classList.add('on'); document.getElementById('bot').style.display='none'; document.getElementById('pbtn').classList.add('on'); };
 window.closePanel = () => { document.getElementById('panel').classList.remove('on'); document.getElementById('ov').classList.remove('on'); document.getElementById('bot').style.display='flex'; document.getElementById('pbtn').classList.remove('on'); };
-window.setPTab = t => { ptab=t; ['cfg','res'].forEach(x=>{document.getElementById('pt-'+x).classList.toggle('on',x===t);document.getElementById('pv-'+x).style.display=x===t?'':'none';}); };
+window.setPTab = t => {
+  ptab = t;
+  ['cfg','res','hist'].forEach(x => {
+    document.getElementById('pt-'+x).classList.toggle('on', x===t);
+    document.getElementById('pv-'+x).style.display = x===t ? '' : 'none';
+  });
+  if (t === 'hist') renderHistorialPanel();
+};
 
 // ── PRECIOS ──
 const PDB = {'arándano':3500,'mora':3200,'primavera':2000,'helado':2800,'espinaca':1400,'cebolla congelada':1100,'mango congelado':2500,'acelga':1300,'brócoli congelado':1500,'café':5500,'cacao':3200,'fécula':950,'maicena':950,'gelatina sin sabor':1400,'harina 0000':1300,'harina leudante':1300,'avena':1800,'pizza':2200,'mermelada':1900,'miel':4200,'orégano':750,'provenzal':850,'stevia':2600,'té verde':2200,'jamaica':2300,'yerba':3800,'galletas arroz':1700,'pionono':1800,'edulcorante':1300,'choclo':1100,'bicarbonato':750,'azúcar':1500,'vainilla':1100,'hornear':900,'caldo':1000,'coca':2800,'gaseosa':2200,'exquisita':2000,'mayonesa':2500,'atún':1800,'galletita':2200,'salsa tomate':1100,'fideos':1500,'gelatina':1000,'pan rallado':900,'arroz':1600,'aceite':3500,'leche':1700,'manteca':2800,'crema':2200,'mozzarella':4000,'yogur':2000,'jamón':3200,'hebras':3500,'flan':1500,'roquefort':5500,'yogurisimo':1400,'papitas':2300,'picada':5000,'dulce de leche':2000,'hummus':2500,'cremoso':4000,'rallar':5500,'empanada':1500,'pascualina':1900,'untable':2800,'pan semillas':2200,'muffin':2800,'rapiditas':1900,'pan':1200,'peceto':11000,'bife':12000,'nalga':9500,'pollo':7000,'pescado':8000,'ajo':1000,'apio':800,'cebolla':900,'durazno':1500,'jengibre':1200,'lechuga':1000,'mandarina':1200,'manzana':1400,'melón':2000,'pepino':900,'perejil':600,'puerro':800,'remolacha':900,'sandía':2500,'repollo':1100,'rúcula':900,'tomate':1500,'limón':1000,'peras':1300,'boniato':1100,'uvas':2000,'morrón':1500,'zapallito':900,'pomelo':1200,'zanahoria':800,'coliflor':1800,'brócoli':1500,'papa':1000,'banana':1200,'naranja':1000,'palta':2500,'zapallo':1300,'frutilla':2800,'bandeja':1800,'enjuague':2800,'rexona':4000,'jabón':2000,'maquinita':3200,'pasta dental':2300,'preservativo':4500,'shampoo':2800,'cepillo':1900,'toallitas femeninas':3500,'toallitas húmedas':2000,'ayudín':2300,'blem':2800,'cif':2500,'destapa':3200,'inodoro':2300,'limpiavidrios':2000,'raid':4000,'fuyi':1800,'virulana':1500,'trapo':1900,'ariel':5500,'esponja':900,'magistral':2000,'rollo cocina':1500,'papel higiénico':2800,'lavandina':1200,'desengrasante':2300,'downy':2800,'bolsa':1500,'fósforo':600,'resma':5500,'papel manteca':800,'ziploc':2800,'almohadita':2800,'cereal':3200,'pasas':2000,'frutos secos':4500,'chía':2300,'lino':5500,'budinera':4500,'manga':2500,'olla':12000,'wok':13000,'sartén':10000,'tupper':3500,'clarificador':3500,'cloro':1200,'alguicida':3000};
@@ -876,8 +897,8 @@ function updateBudgetBar() {
   const pct = Math.min(Math.round(gastado / budget * 100), 100);
   const disponible = Math.max(budget - gastado, 0);
 
-  document.getElementById('mcBudgetLbl').textContent = 'Gastado: $' + Math.round(gastado).toLocaleString('es-AR');
-  document.getElementById('mcBudgetRest').textContent = 'Disponible: $' + disponible.toLocaleString('es-AR');
+  document.getElementById('mcBudgetLbl').textContent = 'Gastado: ' + fmtPrice(gastado);
+  document.getElementById('mcBudgetRest').textContent = 'Disponible: ' + fmtPrice(disponible);
 
   const bar = document.getElementById('mcBudgetBar');
   bar.style.width = pct + '%';
@@ -955,7 +976,7 @@ function renderModoCompra() {
       '<div class="mc-cat-lbl">' + (CATS[cat] || '📦') + ' ' + cat + '</div>';
     bycat[cat].forEach(([id, it]) => {
       const p = prices[id]||{};
-      const estimado = p.precio ? '🤖 $'+p.precio.toLocaleString('es-AR') : '';
+      const estimado = p.precio ? '🤖 '+fmtPrice(p.precio) : '';
       const real = p.precioReal || '';
       html += '<div class="mc-item" onclick="mcTogItem(\'' + id + '\')">' +
         '<div class="mc-chk"></div>' +
@@ -1054,6 +1075,76 @@ window.borrarHistorial = () => {
   toast('Historial borrado');
 };
 
+function renderHistorialPanel() {
+  let historial = {};
+  try { historial = JSON.parse(localStorage.getItem('historial')||'{}'); } catch(e) {}
+  const entries = Object.values(historial).sort((a,b)=>new Date(a.fecha)-new Date(b.fecha));
+  const list = document.getElementById('historialList2');
+  const grafico = document.getElementById('histGrafico2');
+  const stats = document.getElementById('histStats2');
+
+  if (!entries.length) {
+    list.innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted);font-size:13px">Aún no hay compras registradas</div>';
+    grafico.innerHTML = '';
+    stats.style.display = 'none';
+    return;
+  }
+
+  const totales = entries.map(e => e.total);
+  const promedio = Math.round(totales.reduce((a,b)=>a+b,0)/totales.length);
+  const max = Math.max(...totales);
+  const min = Math.min(...totales);
+  const ultima = entries[entries.length-1];
+  const anterior = entries.length > 1 ? entries[entries.length-2] : null;
+  const diff = anterior ? Math.round((ultima.total - anterior.total) / anterior.total * 100) : null;
+
+  stats.style.display = '';
+  stats.innerHTML =
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">' +
+    '<div><div style="font-size:10px;color:var(--green);font-weight:700;text-transform:uppercase">Promedio</div>' +
+    '<div style="font-weight:900;font-size:16px;color:var(--green)">$'+fmtPrice(promedio).replace(sym(),'')+' '+sym()+'</div></div>' +
+    '<div><div style="font-size:10px;color:var(--green);font-weight:700;text-transform:uppercase">Última vs anterior</div>' +
+    '<div style="font-weight:900;font-size:16px;color:'+(diff===null?'var(--muted)':diff>0?'#c0392b':'var(--green)')+'">'+
+    (diff===null?'—':(diff>0?'+':'')+diff+'%')+'</div></div>' +
+    '<div><div style="font-size:10px;color:var(--green);font-weight:700;text-transform:uppercase">Mínimo</div>' +
+    '<div style="font-weight:900;font-size:16px;color:var(--green)">$'+Math.round(min).toLocaleString()+'</div></div>' +
+    '<div><div style="font-size:10px;color:var(--green);font-weight:700;text-transform:uppercase">Máximo</div>' +
+    '<div style="font-weight:900;font-size:16px;color:var(--green)">$'+Math.round(max).toLocaleString()+'</div></div>' +
+    '</div>';
+
+  // Gráfico
+  const maxVal = max * 1.1;
+  const barW = Math.max(28, Math.min(48, Math.floor(280/entries.length)));
+  grafico.innerHTML =
+    '<div style="overflow-x:auto;padding-bottom:4px">' +
+    '<div style="display:flex;align-items:flex-end;gap:6px;min-width:'+Math.max(entries.length*(barW+6),280)+'px;height:140px;padding:0 4px">' +
+    entries.map((e,i) => {
+      const pct = Math.round(e.total/maxVal*100);
+      const fecha = new Date(e.fecha).toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit'});
+      const isLast = i===entries.length-1;
+      return '<div style="display:flex;flex-direction:column;align-items:center;gap:4px;flex-shrink:0;width:'+barW+'px">' +
+        '<div style="font-size:9px;font-weight:700;color:var(--green)">$'+Math.round(e.total/1000)+'k</div>' +
+        '<div style="width:100%;height:'+pct+'%;background:'+(isLast?'var(--green)':'var(--gm)')+';border-radius:6px 6px 0 0;min-height:4px"></div>' +
+        '<div style="font-size:9px;color:var(--muted)">'+fecha+'</div>' +
+        '</div>';
+    }).join('') + '</div></div>';
+
+  // Lista
+  list.innerHTML = [...entries].reverse().map(c => {
+    const fecha = new Date(c.fecha).toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'});
+    const diff = c.estimado ? Math.round((c.total-c.estimado)/c.estimado*100) : null;
+    const diffStr = diff!==null ? (diff>0?'<span style="color:#c0392b;font-weight:700">+'+diff+'%</span>':'<span style="color:var(--green);font-weight:700">'+diff+'%</span>') : '';
+    return '<div style="background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:12px 14px;margin-bottom:8px">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">' +
+      '<div style="font-weight:900;font-size:16px;color:var(--green)">$'+c.total.toLocaleString('es-AR')+'</div>' +
+      '<div style="font-size:11px;color:var(--muted)">'+fecha+'</div></div>' +
+      '<div style="display:flex;justify-content:space-between">' +
+      '<div style="font-size:12px;color:var(--muted)">'+c.super+' · '+c.items+' ítems</div>'+diffStr+'</div>' +
+      (c.estimado?'<div style="font-size:11px;color:var(--muted);margin-top:2px">Estimado: $'+c.estimado.toLocaleString('es-AR')+'</div>':'') +
+      '</div>';
+  }).join('');
+}
+
 let histView = 'grafico';
 
 window.setHistView = (v) => {
@@ -1097,14 +1188,14 @@ function renderHistorial() {
   stats.innerHTML =
     '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">' +
     '<div><div style="font-size:10px;color:var(--green);font-weight:700;text-transform:uppercase;letter-spacing:.05em">Promedio</div>' +
-    '<div style="font-weight:900;font-size:16px;color:var(--green)">$'+promedio.toLocaleString('es-AR')+'</div></div>' +
+    '<div style="font-weight:900;font-size:16px;color:var(--green)">$'+fmtPrice(promedio).replace(sym(),'')+' '+sym()+'</div></div>' +
     '<div><div style="font-size:10px;color:var(--green);font-weight:700;text-transform:uppercase;letter-spacing:.05em">Última vs anterior</div>' +
     '<div style="font-weight:900;font-size:16px;color:'+(diff===null?'var(--muted)':diff>0?'#c0392b':'var(--green)')+'">'+
     (diff===null?'—':(diff>0?'+':'')+diff+'%')+'</div></div>' +
     '<div><div style="font-size:10px;color:var(--green);font-weight:700;text-transform:uppercase;letter-spacing:.05em">Mínimo</div>' +
-    '<div style="font-weight:900;font-size:16px;color:var(--green)">$'+min.toLocaleString('es-AR')+'</div></div>' +
+    '<div style="font-weight:900;font-size:16px;color:var(--green)">$'+Math.round(min).toLocaleString()+'</div></div>' +
     '<div><div style="font-size:10px;color:var(--green);font-weight:700;text-transform:uppercase;letter-spacing:.05em">Máximo</div>' +
-    '<div style="font-weight:900;font-size:16px;color:var(--green)">$'+max.toLocaleString('es-AR')+'</div></div>' +
+    '<div style="font-weight:900;font-size:16px;color:var(--green)">$'+Math.round(max).toLocaleString()+'</div></div>' +
     '</div>';
 
   // ── GRÁFICO ──
@@ -1156,7 +1247,7 @@ window.doShare = () => {
   else { navigator.clipboard?.writeText(location.href); toast('Link copiado 📋'); }
 };
 function toast(msg) { const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('on'); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('on'),2400); }
-function esc(s) { if (!s || typeof s !== "string") return ""; return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+function esc(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 document.getElementById('inp').addEventListener('keydown', e=>{ if(e.key==='Enter') window.addItem(); });
 </script>
 </body>

@@ -128,7 +128,7 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);max-
 <body>
 <div class="hdr">
   <div class="hdr-top">
-    <div>
+    <div onclick="goHome()" style="cursor:pointer">
       <div class="logo">🛒 Lista<em>Super</em></div>
       <div class="sub"><div class="dot" id="dot"></div><span id="subTxt">Cargando...</span></div>
     </div>
@@ -138,6 +138,14 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);max-
     </div>
   </div>
   <div class="prog"><div class="prog-track"><div class="prog-fill" id="pf" style="width:0%"></div></div><div class="prog-pct" id="pp">0%</div></div>
+  <!-- Buscador -->
+  <div style="position:relative;margin-bottom:8px">
+    <span style="position:absolute;left:11px;top:50%;transform:translateY(-50%);font-size:14px;opacity:.5">🔍</span>
+    <input id="searchInp" type="text" placeholder="Buscar producto..." autocorrect="off" autocapitalize="off"
+      oninput="searchItems(this.value)"
+      style="width:100%;background:var(--bg);border:1.5px solid var(--border2);color:var(--text);font-family:'Nunito',sans-serif;font-size:13px;padding:8px 32px 8px 32px;border-radius:10px;outline:none">
+    <span id="searchClear" onclick="clearSearch()" style="display:none;position:absolute;right:11px;top:50%;transform:translateY(-50%);font-size:13px;cursor:pointer;color:var(--muted)">✕</span>
+  </div>
   <div class="tabs" id="tabs"></div>
 </div>
 <div class="add">
@@ -504,10 +512,19 @@ function renderTabs(ids) {
 }
 
 function renderList(ids) {
-  const filt = ids.filter(id => items[id] && (tab==='TODOS' || items[id].cat===tab));
+  let filt = ids.filter(id => items[id] && (tab==='TODOS' || items[id].cat===tab));
+  // Filtrar por búsqueda
+  if (searchQuery) {
+    filt = filt.filter(id => items[id].name && items[id].name.toLowerCase().includes(searchQuery));
+  }
   const bycat = {};
   filt.forEach(id => { const c=items[id].cat||'OTROS'; (bycat[c]=bycat[c]||[]).push(id); });
-  if (!filt.length) { document.getElementById('list').innerHTML='<div class="empty"><div style="font-size:44px;margin-bottom:12px">✅</div><div style="font-weight:700">Lista vacía</div></div>'; return; }
+  if (!filt.length) {
+    document.getElementById('list').innerHTML = searchQuery
+      ? '<div class="empty"><div style="font-size:44px;margin-bottom:12px">🔍</div><div style="font-weight:700">Sin resultados para "'+searchQuery+'"</div></div>'
+      : '<div class="empty"><div style="font-size:44px;margin-bottom:12px">✅</div><div style="font-weight:700">Lista vacía</div></div>';
+    return;
+  }
   const sorted = CAT_ORDER.filter(c => bycat[c]);
   document.getElementById('list').innerHTML = sorted.map(cat => {
     const cids = bycat[cat].sort((a,b)=>(items[a].ts||0)-(items[b].ts||0));
@@ -736,7 +753,7 @@ function renderCarritos() {
       '</div>' +
       '<div style="font-size:12px;color:var(--muted);margin-bottom:10px">' + c.total + ' ítems · ' + cats.length + ' categorías</div>' +
       '<div style="display:flex;gap:8px">' +
-        '<button onclick="restaurarCarrito(\'' + c.id + '\')" style="flex:1;background:var(--green);color:#fff;border:none;font-family:\'Nunito\',sans-serif;font-weight:700;font-size:12px;padding:8px;border-radius:9px;cursor:pointer">↩️ Restaurar</button>' +
+        '<button onclick="restaurarCarrito(\'' + c.id + '\')" style="flex:1;background:var(--green);color:#fff;border:none;font-family:\'Nunito\',sans-serif;font-weight:700;font-size:12px;padding:8px;border-radius:9px;cursor:pointer">✏️ Acceder/Editar</button>' +
         '<button onclick="eliminarCarrito(\'' + c.id + '\')" style="background:var(--bg);border:1.5px solid var(--border2);color:var(--muted);font-family:\'Nunito\',sans-serif;font-weight:700;font-size:12px;padding:8px 12px;border-radius:9px;cursor:pointer">🗑</button>' +
       '</div>' +
     '</div>';
@@ -867,6 +884,32 @@ window.saveNota = (id, val) => {
 };
 window.setTab = t => { tab=t; render(); };
 window.togCat = cat => { col.has(cat)?col.delete(cat):col.add(cat); render(); };
+
+// ── BUSCADOR ──
+let searchQuery = '';
+window.searchItems = (q) => {
+  searchQuery = q.trim().toLowerCase();
+  document.getElementById('searchClear').style.display = searchQuery ? '' : 'none';
+  render();
+};
+window.clearSearch = () => {
+  searchQuery = '';
+  document.getElementById('searchInp').value = '';
+  document.getElementById('searchClear').style.display = 'none';
+  render();
+};
+
+// ── HOME ──
+window.goHome = () => {
+  searchQuery = '';
+  tab = 'TODOS';
+  const inp = document.getElementById('searchInp');
+  if (inp) inp.value = '';
+  const clr = document.getElementById('searchClear');
+  if (clr) clr.style.display = 'none';
+  render();
+  window.scrollTo(0, 0);
+};
 window.openPanel = () => { document.getElementById('panel').classList.add('on'); document.getElementById('ov').classList.add('on'); document.getElementById('bot').style.display='none'; document.getElementById('pbtn').classList.add('on'); };
 window.closePanel = () => { document.getElementById('panel').classList.remove('on'); document.getElementById('ov').classList.remove('on'); document.getElementById('bot').style.display='flex'; document.getElementById('pbtn').classList.remove('on'); };
 window.setPTab = t => {

@@ -401,7 +401,7 @@ const INITIAL = [
 ];
 
 // ── STATE ──
-let items = {}, prices = {}, col = new Set(), tab = 'TODOS', ptab = 'cfg';
+let items = {}, prices = {}, col = new Set(), tab = 'TODOS', ptab = 'cfg', searchQuery = '';
 let fbItems, fbPrices, fbHistorial, fbConnected = false;
 
 // ── PASO 1: Cargar lista local inmediatamente ──
@@ -418,6 +418,29 @@ function loadLocal() {
   localStorage.removeItem('ls5');
   INITIAL.forEach((d,i) => { items['i'+i] = {name:d.n, cat:d.c, checked:!!d.ch, ts:i}; });
 }
+
+// ── FUNCIONES GLOBALES — deben estar antes del primer render ──
+window.setTab = t => { tab=t; render(); };
+window.togCat = cat => { col.has(cat)?col.delete(cat):col.add(cat); render(); };
+window.goHome = () => {
+  searchQuery = ''; tab = 'TODOS';
+  const inp = document.getElementById('searchInp');
+  if (inp) inp.value = '';
+  const clr = document.getElementById('searchClear');
+  if (clr) clr.style.display = 'none';
+  render(); window.scrollTo(0,0);
+};
+window.searchItems = (q) => {
+  searchQuery = q.trim().toLowerCase();
+  document.getElementById('searchClear').style.display = searchQuery ? '' : 'none';
+  render();
+};
+window.clearSearch = () => {
+  searchQuery = '';
+  document.getElementById('searchInp').value = '';
+  document.getElementById('searchClear').style.display = 'none';
+  render();
+};
 
 loadLocal();
 render(); // Mostrar lista inmediatamente
@@ -882,34 +905,8 @@ window.saveNota = (id, val) => {
   items[id].nota = val.trim();
   saveItems();
 };
-window.setTab = t => { tab=t; render(); };
-window.togCat = cat => { col.has(cat)?col.delete(cat):col.add(cat); render(); };
-
-// ── BUSCADOR ──
-let searchQuery = '';
-window.searchItems = (q) => {
-  searchQuery = q.trim().toLowerCase();
-  document.getElementById('searchClear').style.display = searchQuery ? '' : 'none';
-  render();
-};
-window.clearSearch = () => {
-  searchQuery = '';
-  document.getElementById('searchInp').value = '';
-  document.getElementById('searchClear').style.display = 'none';
-  render();
-};
-
-// ── HOME ──
-window.goHome = () => {
-  searchQuery = '';
-  tab = 'TODOS';
-  const inp = document.getElementById('searchInp');
-  if (inp) inp.value = '';
-  const clr = document.getElementById('searchClear');
-  if (clr) clr.style.display = 'none';
-  render();
-  window.scrollTo(0, 0);
-};
+// ── BUSCADOR Y NAVEGACIÓN ──
+// (definidas antes del primer render, arriba)
 window.openPanel = () => { document.getElementById('panel').classList.add('on'); document.getElementById('ov').classList.add('on'); document.getElementById('bot').style.display='none'; document.getElementById('pbtn').classList.add('on'); };
 window.closePanel = () => { document.getElementById('panel').classList.remove('on'); document.getElementById('ov').classList.remove('on'); document.getElementById('bot').style.display='flex'; document.getElementById('pbtn').classList.remove('on'); };
 window.setPTab = t => {

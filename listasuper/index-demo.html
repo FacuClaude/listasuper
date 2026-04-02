@@ -5,7 +5,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<title>🧪 ListaSuper Demo</title>
+<title>🛒 ListaSuper</title>
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f4f3ef;--white:#fff;--border:#e5e2da;--border2:#ccc9c0;--green:#2d6a4f;--gm:#52b788;--gl:#eaf4ee;--gb:#95d5b2;--text:#1a1a18;--text2:#4a4844;--muted:#9a9590;--shadow:0 1px 4px rgba(0,0,0,.08);--shadow-lg:0 8px 32px rgba(0,0,0,.14)}
@@ -398,21 +398,88 @@ let fbItems, fbPrices, fbHistorial, fbConnected = false;
 
 // ── PASO 1: Cargar lista local inmediatamente ──
 function loadLocal() {
-  // DEMO: siempre lista fresca
-  items = {};
-  INITIAL.forEach((d,i) => { items['i'+i] = {name:d.n, cat:d.c, checked:false, ts:i}; });
+  try {
+    const s = localStorage.getItem('ls5');
+    if (s) {
+      const parsed = JSON.parse(s);
+      const valid = Object.values(parsed).filter(v => v && v.name);
+      if (valid.length > 0) { items = parsed; return; }
+    }
+  } catch(e) {}
+  // Sin datos válidos — limpiar y cargar lista inicial
+  localStorage.removeItem('ls5');
+  INITIAL.forEach((d,i) => { items['i'+i] = {name:d.n, cat:d.c, checked:!!d.ch, ts:i}; });
 }
 
 loadLocal();
 render(); // Mostrar lista inmediatamente
 
-// ── MODO DEMO — sin Firebase ──
-document.getElementById('dot').className = 'dot ok';
-document.getElementById('subTxt').textContent = '🧪 Modo demo · los cambios no se guardan';
-fbConnected = true;
+// ── PASO 2: Conectar Firebase en segundo plano ──
+try {
+  const fbApp = initializeApp(FB);
+  const db = getDatabase(fbApp);
+  window._fbApp = fbApp;
+  fbItems = ref(db, 'lista2/items');
+  fbPrices = ref(db, 'lista2/prices');
+  fbHistorial = ref(db, 'lista2/historial');
 
-function saveItems() { /* DEMO */ }
-function savePrices() { /* DEMO */ }
+  // Cargar precios de referencia personalizados
+  const preciosRefFbRef = ref(db, 'lista2/preciosRef');
+  onValue(preciosRefFbRef, snap => {
+    window._preciosRefFB = snap.val() || {};
+  });
+
+  onValue(fbItems, snap => {
+    const data = snap.val();
+    // Verificar que haya ítems válidos (con nombre)
+    const validItems = data ? Object.entries(data).filter(([,v]) => v && v.name) : [];
+    if (validItems.length > 0) {
+      // Firebase tiene datos válidos — usar esos
+      items = Object.fromEntries(validItems);
+    } else {
+      // Firebase vacío o sin datos válidos — subir lista local
+      const localItems = {};
+      INITIAL.forEach((d,i) => { localItems['i'+i] = {name:d.n, cat:d.c, checked:!!d.ch, ts:i}; });
+      items = localItems;
+      set(fbItems, items);
+    }
+    fbConnected = true;
+    document.getElementById('dot').className = 'dot ok';
+    document.getElementById('subTxt').textContent = 'Sincronizado en tiempo real ✓';
+    render();
+  });
+
+  onValue(fbPrices, snap => {
+    const data = snap.val();
+    if (data) { prices = data; renderResults(); }
+  });
+
+  // Sincronizar carritos
+  onValue(ref(db, 'lista2/carritos'), snap => {
+    const data = snap.val();
+    if (data) {
+      const arr = Object.values(data).sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
+      try { localStorage.setItem('carritos', JSON.stringify(arr)); } catch(e) {}
+    }
+  });
+
+  // Sincronizar historial
+  onValue(fbHistorial, snap => {
+    const data = snap.val();
+    if (data) { try { localStorage.setItem('historial', JSON.stringify(data)); } catch(e) {} }
+  });
+
+} catch(e) {
+  document.getElementById('subTxt').textContent = 'Sin sincronización';
+}
+
+function saveItems() {
+  localStorage.setItem('ls5', JSON.stringify(items));
+  if (fbItems) set(fbItems, items).catch(()=>{});
+}
+function savePrices() {
+  if (fbPrices) set(fbPrices, prices).catch(()=>{});
+}
 
 // ── RENDER ──
 function render() {
@@ -798,6 +865,7 @@ window.saveNota = (id, val) => {
   items[id].nota = val.trim();
   saveItems();
 };
+window.setTab = t => { tab=t; render(); };
 window.togCat = cat => { col.has(cat)?col.delete(cat):col.add(cat); render(); };
 window.openPanel = () => { document.getElementById('panel').classList.add('on'); document.getElementById('ov').classList.add('on'); document.getElementById('bot').style.display='none'; document.getElementById('pbtn').classList.add('on'); };
 window.closePanel = () => { document.getElementById('panel').classList.remove('on'); document.getElementById('ov').classList.remove('on'); document.getElementById('bot').style.display='flex'; document.getElementById('pbtn').classList.remove('on'); };

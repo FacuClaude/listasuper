@@ -865,6 +865,7 @@ window.saveNota = (id, val) => {
   items[id].nota = val.trim();
   saveItems();
 };
+window.setTab = t => { tab=t; render(); };
 window.togCat = cat => { col.has(cat)?col.delete(cat):col.add(cat); render(); };
 window.openPanel = () => { document.getElementById('panel').classList.add('on'); document.getElementById('ov').classList.add('on'); document.getElementById('bot').style.display='none'; document.getElementById('pbtn').classList.add('on'); };
 window.closePanel = () => { document.getElementById('panel').classList.remove('on'); document.getElementById('ov').classList.remove('on'); document.getElementById('bot').style.display='flex'; document.getElementById('pbtn').classList.remove('on'); };

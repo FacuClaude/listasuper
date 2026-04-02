@@ -521,7 +521,7 @@ function render() {
   const pct = total ? Math.round(comprados.length/total*100) : 0;
   document.getElementById('pf').style.width = pct+'%';
   document.getElementById('pp').textContent = pct+'%';
-  if (fbConnected) document.getElementById('subTxt').textContent = pendientes.length+' pendientes · '+comprados.length+' comprados';
+  if (fbConnected) document.getElementById('subTxt').textContent = pendientes.length+' para comprar · '+comprados.length+' en lista';
   renderTabs(ids);
   renderList(ids);
 }

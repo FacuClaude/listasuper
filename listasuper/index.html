@@ -402,6 +402,16 @@ const INITIAL = [
   {n:'Clarificador pileta',c:'OTROS'},{n:'Cloro pileta',c:'OTROS',ch:1},{n:'Alguicida',c:'OTROS',ch:1},
 ];
 
+// ── MONEDA ──
+let currency = localStorage.getItem('currency') || 'ARS';
+const CURRENCY_SYMBOL = { ARS: '$', USD: '$', EUR: '€' };
+const CURRENCY_LOCALE = { ARS: 'es-AR', USD: 'en-US', EUR: 'de-DE' };
+function sym() { return CURRENCY_SYMBOL[currency] || '$'; }
+function fmtPrice(n) {
+  if (!n && n !== 0) return '';
+  return sym() + Math.round(n).toLocaleString(CURRENCY_LOCALE[currency]);
+}
+
 // ── STATE ──
 let items = {}, prices = {}, col = new Set(), tab = 'TODOS', ptab = 'cfg', searchQuery = '';
 let fbItems, fbPrices, fbHistorial, fbConnected = false;
@@ -424,6 +434,40 @@ function loadLocal() {
 // ── FUNCIONES GLOBALES — deben estar antes del primer render ──
 window.setTab = t => { tab=t; render(); };
 window.togCat = cat => { col.has(cat)?col.delete(cat):col.add(cat); render(); };
+window.openPanel = () => { document.getElementById('panel').classList.add('on'); document.getElementById('ov').classList.add('on'); document.getElementById('bot').style.display='none'; document.getElementById('pbtn').classList.add('on'); };
+window.openCarritos = () => {
+  const seleccionados = Object.values(items).filter(it => it && it.name && !it.checked);
+  document.getElementById('carritoActualInfo').textContent = seleccionados.length + ' ítems sin tachar · ' + [...new Set(seleccionados.map(it=>it.cat))].length + ' categorías';
+  document.getElementById('carritoNombre').value = '';
+  renderCarritos();
+  document.getElementById('panelCarritos').classList.add('on');
+  document.getElementById('ovCarritos').classList.add('on');
+  document.getElementById('bot').style.display = 'none';
+};
+window.clearChecked = () => {
+  const ch = Object.keys(items).filter(id=>items[id]&&items[id].checked);
+  if (!ch.length) { toast('No hay tachados'); return; }
+  ch.forEach(id=>{delete items[id];delete prices[id];});
+  saveItems(); savePrices(); render(); toast('Borrados '+ch.length+' ítems');
+};
+window.destacharTodos = () => {
+  const ch = Object.keys(items).filter(id=>items[id]&&items[id].checked);
+  if (!ch.length) { toast('No hay ítems tachados'); return; }
+  ch.forEach(id=>{ items[id].checked = false; });
+  saveItems(); render(); toast('Destachados '+ch.length+' ítems ✓');
+};
+window.entrarModoCompra = () => {
+  Object.keys(prices).forEach(id => { if (prices[id]?.precioReal) delete prices[id].precioReal; });
+  savePrices();
+  const saved = localStorage.getItem('mc_budget');
+  window._budget = saved ? parseInt(saved) : 0;
+  const input = document.getElementById('mcBudgetInput');
+  if (input) input.value = window._budget || '';
+  renderModoCompra();
+  updateBudgetBar();
+  document.getElementById('mcOverlay').classList.add('on');
+  document.body.style.overflow = 'hidden';
+};
 window.goHome = () => {
   searchQuery = ''; tab = 'TODOS';
   const inp = document.getElementById('searchInp');
@@ -811,16 +855,8 @@ if (window._fbApp) {
   });
 }
 
-// ── MONEDA ──
-let currency = localStorage.getItem('currency') || 'ARS';
-const CURRENCY_SYMBOL = { ARS: '$', USD: '$', EUR: '€' };
-const CURRENCY_LOCALE = { ARS: 'es-AR', USD: 'en-US', EUR: 'de-DE' };
-
-function sym() { return CURRENCY_SYMBOL[currency] || '$'; }
-function fmtPrice(n) {
-  if (!n && n !== 0) return '';
-  return sym() + Math.round(n).toLocaleString(CURRENCY_LOCALE[currency]);
-}
+// ── BUSCADOR Y NAVEGACIÓN ──
+// (definidas antes del primer render, arriba)
 
 window.setCurrency = (cur) => {
   currency = cur;
